@@ -1,0 +1,317 @@
+import streamlit as st
+import feedparser
+import base64
+import glob
+from datetime import datetime, timedelta, timezone
+from time import mktime
+
+st.set_page_config(
+    page_title="Nortisce Gaming News Bulldozer",
+    page_icon="🎮",
+    layout="wide"
+)
+
+# Otomatis mencari file gambar yang mengandung kata 'chunli' di folder project
+def get_chunli_bg():
+    for ext in ["*.jpg", "*.jpeg", "*.png", "*.webp"]:
+        for file in glob.glob(ext):
+            if "chunli" in file.lower():
+                if file.lower().endswith(".png"):
+                    mime = "image/png"
+                elif file.lower().endswith(".webp"):
+                    mime = "image/webp"
+                else:
+                    mime = "image/jpeg"
+                with open(file, "rb") as img_file:
+                    b64 = base64.b64encode(img_file.read()).decode()
+                    return b64, mime
+    return "", ""
+
+sidebar_bg_base64, img_mime = get_chunli_bg()
+
+if sidebar_bg_base64:
+    sidebar_css = (
+        '[data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {'
+        f'    background-image: linear-gradient(rgba(10, 15, 30, 0.55), rgba(10, 15, 30, 0.75)), url("data:{img_mime};base64,{sidebar_bg_base64}") !important;'
+        '    background-size: cover !important;'
+        '    background-position: center 15% !important;'
+        '    background-repeat: no-repeat !important;'
+        '}'
+    )
+else:
+    st.sidebar.warning("⚠️ File gambar 'chunli' belum ditemukan di folder project")
+    sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.9) !important; }'
+
+custom_ui = (
+    '<style>'
+    '.stApp {'
+    '    background-image: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), '
+    '                      url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop");'
+    '    background-size: cover;'
+    '    background-position: center;'
+    '    background-attachment: fixed;'
+    '}'
+    + sidebar_css +
+    'header[data-testid="stHeader"] { background-color: transparent !important; }'
+    '.metal-slug-banner {'
+    '    position: fixed; top: 0; left: 0; width: 100%; height: 60px;'
+    '    overflow: hidden; pointer-events: none; z-index: 999990;'
+    '}'
+    '@keyframes patrolShoot {'
+    '    0% { left: -60px; transform: scaleX(1); }'
+    '    47% { left: calc(100% - 210px); transform: scaleX(1); }'
+    '    50% { left: calc(100% - 210px); transform: scaleX(-1); }'
+    '    97% { left: -60px; transform: scaleX(-1); }'
+    '    100% { left: -60px; transform: scaleX(1); }'
+    '}'
+    '@keyframes runBounce {'
+    '    0%, 100% { transform: translateY(0px); }'
+    '    50% { transform: translateY(-3px); }'
+    '}'
+    '@keyframes legLeft { 0%, 100% { transform: translateX(0px); } 50% { transform: translateX(3px); } }'
+    '@keyframes legRight { 0%, 100% { transform: translateX(0px); } 50% { transform: translateX(-3px); } }'
+    '@keyframes muzzleFlash { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }'
+    '.metal-slug-runner {'
+    '    position: absolute; top: 6px; width: 60px; height: 50px;'
+    '    animation: patrolShoot 12s linear infinite;'
+    '}'
+    '.sprite-body { width: 100%; height: 100%; animation: runBounce 0.2s infinite; }'
+    '.leg-l { animation: legLeft 0.2s infinite; }'
+    '.leg-r { animation: legRight 0.2s infinite; }'
+    '.flash { animation: muzzleFlash 0.12s infinite; }'
+    '@keyframes bulletStream1 { 0% { opacity: 1; transform: translateX(0px); } 100% { opacity: 0; transform: translateX(260px); } }'
+    '@keyframes bulletStream2 { 0% { opacity: 0; transform: translateX(0px); } 40% { opacity: 1; transform: translateX(80px); } 100% { opacity: 0; transform: translateX(260px); } }'
+    '.bullet-1, .bullet-2 {'
+    '    position: absolute; top: 23px; left: 44px; width: 16px; height: 3px;'
+    '    background: #fff200; box-shadow: 0 0 6px #ff6600, 0 0 10px #ff0000; border-radius: 2px;'
+    '}'
+    '.bullet-1 { animation: bulletStream1 0.3s linear infinite; }'
+    '.bullet-2 { animation: bulletStream2 0.3s linear infinite; }'
+    'div.stContainer {'
+    '    background-color: rgba(15, 20, 35, 0.75); padding: 15px;'
+    '    border-radius: 10px; border: 1px solid rgba(255, 120, 0, 0.3); margin-bottom: 10px;'
+    '}'
+    '</style>'
+    '<div class="metal-slug-banner">'
+    '  <div class="metal-slug-runner">'
+    '    <div class="sprite-body">'
+    '      <svg viewBox="0 0 16 16" width="46" height="46" shape-rendering="crispEdges">'
+    '        <rect x="4" y="1" width="6" height="2" fill="#8B4513"/>'
+    '        <rect x="4" y="3" width="7" height="1" fill="#FF0000"/>'
+    '        <rect x="2" y="3" width="2" height="2" fill="#FF0000"/>'
+    '        <rect x="5" y="4" width="5" height="3" fill="#FFCC99"/>'
+    '        <rect x="8" y="4" width="1" height="1" fill="#000000"/>'
+    '        <rect x="4" y="7" width="6" height="4" fill="#F0F0F0"/>'
+    '        <rect x="5" y="7" width="4" height="4" fill="#3A5F0B"/>'
+    '        <rect x="6" y="8" width="8" height="2" fill="#222222"/>'
+    '        <rect x="7" y="9" width="2" height="2" fill="#555555"/>'
+    '        <polygon class="flash" points="14,7 16,9 14,11" fill="#FFAA00"/>'
+    '        <g class="leg-l"><rect x="4" y="11" width="2" height="3" fill="#2F4F4F"/><rect x="3" y="14" width="3" height="2" fill="#4A2E1B"/></g>'
+    '        <g class="leg-r"><rect x="8" y="11" width="2" height="3" fill="#2F4F4F"/><rect x="8" y="14" width="3" height="2" fill="#4A2E1B"/></g>'
+    '      </svg>'
+    '    </div>'
+    '    <div class="bullet-1"></div>'
+    '    <div class="bullet-2"></div>'
+    '  </div>'
+    '</div>'
+)
+st.markdown(custom_ui, unsafe_allow_html=True)
+
+st.title("🎮 Nortisce Global Gaming News Bulldozer")
+st.markdown("Menyerok berita dari **20 kanal game global terbaik** dengan filter kategori, rentang waktu, dan sumber website.")
+
+RSS_SOURCES = {
+    "IGN": "https://feeds.feedburner.com/ign/games-all",
+    "GameSpot": "https://www.gamespot.com/feeds/news/",
+    "Gematsu": "https://www.gematsu.com/feed",
+    "Nintendo Life": "https://nintendolive.com/feed",
+    "Eurogamer": "https://www.eurogamer.net/feed",
+    "PC Gamer": "https://www.pcgamer.com/rss/",
+    "Destructoid": "https://www.destructoid.com/feed/",
+    "Kotaku": "https://kotaku.com/feed",
+    "Polygon": "https://www.polygon.com/rss/index.xml",
+    "Push Square": "https://www.pushsquare.com/feed",
+    "Pure Xbox": "https://www.purexbox.com/feed",
+    "GamesIndustry.biz": "https://www.gamesindustry.biz/feed",
+    "VG247": "https://www.vg247.com/feed",
+    "Pocket Gamer": "https://www.pocketgamer.com/rss/news.xml",
+    "TouchArcade": "https://toucharcade.com/feed/",
+    "Anime Senpai": "https://animesenpai.com/feed/",
+    "ResetEra": "https://www.resetera.com/index.rss",
+    "DualShockers": "https://www.dualshockers.com/feed/",
+    "Wccftech": "https://wccftech.com/feed",
+    "Rock Paper Shotgun": "https://www.rockpapershotgun.com/feed"
+}
+
+@st.cache_data(ttl=3600)
+def muat_data_berita():
+    semua_berita = []
+    sekarang_utc = datetime.now(timezone.utc)
+    batas_waktu = sekarang_utc - timedelta(days=7)
+
+    for nama_web, u in RSS_SOURCES.items():
+        try:
+            feed = feedparser.parse(u)
+            for entry in feed.entries:
+                if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                    pub_dt = datetime.fromtimestamp(mktime(entry.published_parsed), timezone.utc)
+                    if pub_dt >= batas_waktu:
+                        selisih_jam = (sekarang_utc - pub_dt).total_seconds() / 3600
+                        selisih_hari = int(selisih_jam // 24)
+
+                        if selisih_jam < 24:
+                            label_waktu = "Today (Hari Ini)"
+                        elif selisih_hari == 1:
+                            label_waktu = "1 Day Ago (Kemarin)"
+                        else:
+                            label_waktu = f"{selisih_hari} Days Ago"
+
+                        tanggal_str = pub_dt.strftime("%d %b %Y, %H:%M")
+                        info = {
+                            "judul": entry.title,
+                            "link": entry.link,
+                            "sumber": nama_web,
+                            "tanggal": tanggal_str,
+                            "rentang_waktu": label_waktu,
+                            "selisih_hari": selisih_hari
+                        }
+                        if info not in semua_berita:
+                            semua_berita.append(info)
+                else:
+                    info = {
+                        "judul": entry.title,
+                        "link": entry.link,
+                        "sumber": nama_web,
+                        "tanggal": "Terbaru",
+                        "rentang_waktu": "Terbaru / Lainnya",
+                        "selisih_hari": 99
+                    }
+                    if info not in semua_berita:
+                        semua_berita.append(info)
+        except Exception:
+            pass
+    return semua_berita
+
+with st.spinner("⏳ Sedang menyerok berita dari 20 server global..."):
+    semua_berita = muat_data_berita()
+
+st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir!")
+
+st.sidebar.header("🎛️ Panel Filter Konten")
+
+pilih_kategori = st.sidebar.selectbox(
+    "📂 Pilih Kategori Berita:",
+    [
+        "Semua Kategori",
+        "🎮 Game Releases & Updates",
+        "🛠️ Tech, Hardware & Performance",
+        "🏢 Industry & Business",
+        "🏆 Esports & Competitive",
+        "🍿 Pop Culture, Media & Leaks",
+        "📌 Lainnya"
+    ]
+)
+
+daftar_web = ["Semua Website (20 Media)"] + list(RSS_SOURCES.keys())
+pilih_web = st.sidebar.selectbox(
+    "🌐 Pilih Sumber Website:",
+    daftar_web
+)
+
+pilih_waktu = st.sidebar.selectbox(
+    "⏰ Pilih Rentang Waktu:",
+    [
+        "Semua Rentang Waktu (7 Hari Terakhir)",
+        "Today (Hari Ini)",
+        "1 Day Ago (Kemarin)",
+        "2 Days Ago",
+        "3 Days Ago",
+        "4-7 Days Ago"
+    ]
+)
+
+kategori = {
+    "🎮 Game Releases & Updates": [],
+    "🛠️ Tech, Hardware & Performance": [],
+    "🏢 Industry & Business": [],
+    "🏆 Esports & Competitive": [],
+    "🍿 Pop Culture, Media & Leaks": [],
+    "📌 Lainnya": []
+}
+
+keywords = {
+    "🎮 Game Releases & Updates": [
+        "release", "launch", "update", "patch", "dlc",
+        "expansion", "out now", "beta", "season", "gameplay", "review"
+    ],
+    "🛠️ Tech, Hardware & Performance": [
+        "rtx", "gtx", "gpu", "cpu", "amd", "nvidia",
+        "intel", "ps5 pro", "switch 2", "hardware", "monitor", "fps", "steam deck"
+    ],
+    "🏢 Industry & Business": [
+        "acquire", "acquisition", "layoffs", "studio", "sales",
+        "revenue", "sony", "nintendo", "microsoft", "xbox", "epic games", "valve"
+    ],
+    "🏆 Esports & Competitive": [
+        "esports", "tournament", "championship", "valorant",
+        "pro player", "meta", "nerf", "buff"
+    ],
+    "🍿 Pop Culture, Media & Leaks": [
+        "movie", "series", "adaption", "trailer", "leak", "rumor", "hbo", "netflix"
+    ]
+}
+
+berita_terfilter = []
+for item in semua_berita:
+    sw = item["selisih_hari"]
+    waktu_cocok = False
+
+    if pilih_waktu == "Semua Rentang Waktu (7 Hari Terakhir)":
+        waktu_cocok = True
+    elif pilih_waktu == "Today (Hari Ini)" and item["rentang_waktu"] == "Today (Hari Ini)":
+        waktu_cocok = True
+    elif pilih_waktu == "1 Day Ago (Kemarin)" and item["rentang_waktu"] == "1 Day Ago (Kemarin)":
+        waktu_cocok = True
+    elif pilih_waktu == "2 Days Ago" and sw == 2:
+        waktu_cocok = True
+    elif pilih_waktu == "3 Days Ago" and sw == 3:
+        waktu_cocok = True
+    elif pilih_waktu == "4-7 Days Ago" and (4 <= sw <= 7):
+        waktu_cocok = True
+
+    web_cocok = (pilih_web == "Semua Website (20 Media)") or (item["sumber"] == pilih_web)
+
+    if waktu_cocok and web_cocok:
+        berita_terfilter.append(item)
+
+for item in berita_terfilter:
+    judul_lower = item["judul"].lower()
+    masuk_kategori = False
+    for kat, keys in keywords.items():
+        if any(k in judul_lower for k in keys):
+            kategori[kat].append(item)
+            masuk_kategori = True
+            break
+    if not masuk_kategori:
+        kategori["📌 Lainnya"].append(item)
+
+if pilih_kategori == "Semua Kategori":
+    target_tampil = kategori.items()
+else:
+    target_tampil = [(pilih_kategori, kategori[pilih_kategori])]
+
+st.markdown("---")
+total_ditampilkan = sum(len(daftar) for _, daftar in target_tampil)
+st.info(f"Menampilkan **{total_ditampilkan} berita** | Kategori: **{pilih_kategori}** | Sumber: **{pilih_web}** | Waktu: **{pilih_waktu}**")
+
+for kat, daftar in target_tampil:
+    if daftar:
+        st.markdown(f"### {kat} ({len(daftar)} Berita)")
+        for b in daftar:
+            with st.container():
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.markdown(f"**{b['judul']}**")
+                    st.caption(f"🌐 **{b['sumber']}** | 📅 {b['tanggal']} ({b['rentang_waktu']})")
+                with col2:
+                    st.markdown(f"[🔗 Buka Berita]({b['link']})")
