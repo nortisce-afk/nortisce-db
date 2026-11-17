@@ -13,10 +13,6 @@ st.set_page_config(
     page_title="Nortisce Gaming News Database", page_icon="🎮", layout="wide"
 )
 
-# Inisialisasi status buka/tutup sidebar
-if "sidebar_open" not in st.session_state:
-  st.session_state.sidebar_open = True
-
 # Mengambil daftar banyak API Key dari Streamlit Secrets
 daftar_api_keys = []
 if "GEMINI_API_KEYS" in st.secrets:
@@ -57,9 +53,20 @@ else:
       " !important; }"
   )
 
+# Cek status buka/tutup sidebar via session_state
+if "sidebar_open" not in st.session_state:
+  st.session_state.sidebar_open = False
+
+# Tangkap parameter URL query untuk buka/tutup sidebar
+query_params = st.query_params
+if "toggle_sidebar" in query_params:
+  val = query_params["toggle_sidebar"]
+  st.session_state.sidebar_open = val == "1"
+  st.rerun()
+
 sidebar_left_pos = "0px" if st.session_state.sidebar_open else "-300px"
 
-# --- CLEAN GAMING UI CSS + CUSTOM ARROW TOGGLE DI POJOK KIRI ATAS ---
+# --- CLEAN GAMING UI CSS + PC CLICK-OUTSIDE OVERLAY ---
 custom_ui = (
     "<style>"
     ".stApp { background-image:"
@@ -82,33 +89,7 @@ custom_ui = (
     " box-shadow: 5px 0 25px rgba(0, 0, 0, 0.8) !important;"
     " border-right: 1px solid rgba(56, 189, 248, 0.4) !important;"
     "}"
-    # --- TOMBOL PANAH IKON DI POJOK KIRI ATAS ---
-    ".floating-sidebar-toggle {"
-    " position: fixed;"
-    " top: 12px;"
-    f" left: {'265px' if st.session_state.sidebar_open else '15px'};"
-    " z-index: 1000000;"
-    " background: rgba(15, 23, 42, 0.8);"
-    " border: 1px solid rgba(56, 189, 248, 0.5);"
-    " color: #38bdf8;"
-    " width: 36px;"
-    " height: 36px;"
-    " border-radius: 8px;"
-    " display: flex;"
-    " align-items: center;"
-    " justify-content: center;"
-    " text-decoration: none;"
-    " font-size: 18px;"
-    " font-weight: bold;"
-    " transition: all 0.3s ease;"
-    " backdrop-filter: blur(4px);"
-    "}"
-    ".floating-sidebar-toggle:hover {"
-    " background: rgba(56, 189, 248, 0.25);"
-    " color: #ffffff;"
-    " border-color: #38bdf8;"
-    "}"
-    # --- LAPISAN OVERLAY KLIK DI LUAR SIDEBAR ---
+    # --- LAPISAN OVERLAY KHUSUS PC (DI LUAR 300px SIDEBAR) ---
     + (
         "\n@media (min-width: 768px) {\n"
         " .pc-sidebar-overlay {\n"
@@ -124,7 +105,8 @@ custom_ui = (
         if st.session_state.sidebar_open
         else ""
     )
-    + ".metal-slug-banner { position: fixed; top: 0; left: 0; width: 100%; height:"
+    + "# Metal Slug Runner Animation Banner"
+    ".metal-slug-banner { position: fixed; top: 0; left: 0; width: 100%; height:"
     " 50px; overflow: hidden; pointer-events: none; z-index: 999990; }"
     "@keyframes patrolShoot { 0% { left: -60px; transform: scaleX(1); } 47% {"
     " left: calc(100% - 210px); transform: scaleX(1); } 50% { left: calc(100%"
@@ -203,17 +185,13 @@ custom_ui = (
     " background-color: rgba(56, 189, 248, 0.25) !important;"
     "}"
     "</style>"
+    # Render overlay klik khusus PC di luar sidebar jika sidebar sedang terbuka
     + (
-        '<div onclick="window.location.href=\'?toggle_sidebar=0\'"'
-        ' class="pc-sidebar-overlay" title="Tutup Menu"></div>'
+        '<a href="?toggle_sidebar=0" class="pc-sidebar-overlay" title="Tutup'
+        ' Menu"></a>'
         if st.session_state.sidebar_open
         else ""
     )
-    # Tombol Panah Floating di Pojok Kiri Atas
-    + f'<a href="?toggle_sidebar={0 if st.session_state.sidebar_open else 1}"'
-    ' class="floating-sidebar-toggle"'
-    f' title="{"Tutup Menu" if st.session_state.sidebar_open else "Buka Menu"}">'
-    f'{"❮" if st.session_state.sidebar_open else "❯"}</a>'
     + '<div class="metal-slug-banner"><div class="metal-slug-runner"><div'
     ' class="sprite-body">'
     '<svg viewBox="0 0 16 16" width="40" height="40"'
@@ -242,7 +220,7 @@ st.markdown(custom_ui, unsafe_allow_html=True)
 st.title("🎮 Nortisce Gaming News Database")
 st.markdown(
     "Database berita game terkini dari **20 kanal global + 8 kanal lokal"
-    " terbaik** lengkap dengan thumbnail asli, filter, dan analisis AI Gemini."
+    " terbaik** lengkap dengan thumbnail, filter, dan analisis AI Gemini."
 )
 
 RSS_SOURCES = {
@@ -301,37 +279,6 @@ def bersihkan_html(teks):
 
 
 def ambil_thumbnail(entry):
-  if hasattr(entry, "media_thumbnail") and entry.media_thumbnail:
-    for t in entry.media_thumbnail:
-      if "url" in t:
-        return t["url"]
-  if hasattr(entry, "media_content") and entry.media_content:
-    for m in entry.media_content:
-      if "url" in m:
-        return m["url"]
-  if hasattr(entry, "enclosures") and entry.enclosures:
-    for enc in entry.enclosures:
-      if enc.get("type", "").startswith("image/") and enc.get("href"):
-        return enc.get("href")
-  if hasattr(entry, "links") and entry.links:
-    for l in entry.links:
-      if l.get("type", "").startswith("image/") and l.get("href"):
-        return l.get("href")
-  raw_html = ""
-  if hasattr(entry, "summary"):
-    raw_html += entry.summary
-  if hasattr(entry, "content"):
-    for c in entry.content:
-      raw_html += c.get("value", "")
-  if raw_html:
-    img_matches = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', raw_html)
-    for src in img_matches:
-      if src.startswith("http") and not any(
-          x in src.lower()
-          for x in ["pixel", "spacer", "icon", "logo", "avatar", "track"]
-      ):
-        return src
-
   fallback_game_images = [
       (
           "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop"
@@ -349,7 +296,43 @@ def ambil_thumbnail(entry):
           "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop"
       ),
   ]
-  return random.choice(fallback_game_images)
+
+  candi_url = ""
+  if hasattr(entry, "media_content") and entry.media_content:
+    for m in entry.media_content:
+      if "url" in m:
+        candi_url = m["url"]
+        break
+  if not candi_url and hasattr(entry, "links") and entry.links:
+    for l in entry.links:
+      if "type" in l and "image" in l["type"]:
+        candi_url = l["href"]
+        break
+  if not candi_url:
+    raw_html = getattr(entry, "summary", "") + getattr(
+        entry, "content", [{"value": ""}]
+    )[0].get("value", "")
+    match = re.search(
+        r'src=["\'](https?://[^"\']+\.(?:jpg|jpeg|png|webp))["\']',
+        raw_html,
+        re.IGNORECASE,
+    )
+    if match:
+      candi_url = match.group(1)
+
+  if not candi_url or any(
+      bad in candi_url.lower()
+      for bad in [
+          "purexbox.com",
+          "nintendolife.com",
+          "pushsquare.com",
+          "kickstarter",
+          "ads",
+      ]
+  ):
+    return random.choice(fallback_game_images)
+
+  return candi_url
 
 
 @st.cache_data(ttl=3600)
@@ -398,6 +381,7 @@ def muat_data_berita():
     except Exception:
       pass
 
+  # Algoritma Hype & Engagement Scoring
   kata_penting = []
   for item in semua_berita:
     kata2 = [
@@ -524,7 +508,9 @@ if st.sidebar.button("🔄 Refresh Cache Berita", use_container_width=True):
   st.cache_data.clear()
   st.rerun()
 
-with st.spinner("⏳ Menyerok berita, menganalisis hype & thumbnail..."):
+with st.spinner(
+    "⏳ Menyerok berita, menganalisis hype & thumbnail dari 28 server..."
+):
   semua_berita = muat_data_berita()
 
 st.success(
@@ -563,12 +549,14 @@ pilih_waktu = st.sidebar.selectbox(
     ],
 )
 
+# --- SIDEBAR: UPCOMING GAMES RELEASE ---
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     "[🎮 Upcoming Games Release](https://www.ign.com/upcoming/games)",
     unsafe_allow_html=True,
 )
 
+# --- MINI-GAME TIC-TAC-TOE ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("🕹️ Tic-Tac-Toe")
 st.sidebar.caption("Kamu (**❌**) vs Bot (**⭕**)")
@@ -751,10 +739,12 @@ target_tampil = (
 st.markdown("---")
 total_ditampilkan = sum(len(daftar) for _, daftar in target_tampil)
 st.info(
-    f"Menampilkan total **{total_ditampilkan} berita** tersaring | Kategori:"
+    f"Menampilkan total **{total_ditampilkan} berita** tersaring (Diurutkan"
+    f" berdasarkan Engagement & Hype Tertinggi) | Kategori:"
     f" **{pilih_kategori}** | Sumber: **{pilih_web}**"
 )
 
+# --- SISTEM PAGINASI TERSINKRONISASI SEMPURNA (ATAS & BAWAH) ---
 semua_berita_flat = []
 for kat, daftar in target_tampil:
   for b in daftar:
@@ -785,6 +775,7 @@ def ubah_halaman_bawah():
   st.session_state.top_pagination = st.session_state.bottom_pagination
 
 
+# Paginasi Bagian Atas
 if total_pages > 1:
   st.selectbox(
       f"📄 Pilih Halaman (Total {total_pages} Page Tersedia):",
@@ -803,14 +794,17 @@ berita_paginasi = semua_berita_flat[start_idx:end_idx]
 
 st.markdown(
     f"### 📑 Menampilkan Berita Halaman {current_page} dari {total_pages}"
-    f" ({len(berita_paginasi)} Berita)"
+    f" ({len(berita_paginasi)} Berita di Halaman Ini)"
 )
 
 for idx, b in enumerate(berita_paginasi):
   with st.container():
     col_img, col_txt = st.columns([1, 4])
+
     with col_img:
+      # Diperbarui menggunakan use_container_width agar tidak error deprecated di Streamlit versi baru
       st.image(b["thumbnail"], use_container_width=True)
+
     with col_txt:
       st.markdown(f"**[{b['judul']}]({b['link']})**")
       st.caption(
@@ -821,6 +815,7 @@ for idx, b in enumerate(berita_paginasi):
     expander_key = f"exp_page_{current_page}_{idx}_{b['judul'][:10]}"
     with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
       col_btn1, col_btn2 = st.columns(2)
+
       if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
         if not daftar_api_keys:
           st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
@@ -857,6 +852,7 @@ for idx, b in enumerate(berita_paginasi):
             except Exception as e:
               st.error(f"Detail kendala: {e}")
 
+# --- Paginasi Bagian Bawah (Tersinkronisasi otomatis dengan atas) ---
 if total_pages > 1:
   st.markdown("---")
   st.selectbox(
