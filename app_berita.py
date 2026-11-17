@@ -147,8 +147,8 @@ def analisis_gemini_multi_key(keys_tuple, mode, judul, sumber, deskripsi):
             f"Title: {judul}\nContext: {deskripsi}"
         )
 
-    error_terakhir = None
-    for key in keys_tuple:
+    catatan_error = []
+    for idx, key in enumerate(keys_tuple, start=1):
         if not key or not key.strip():
             continue
         try:
@@ -157,10 +157,10 @@ def analisis_gemini_multi_key(keys_tuple, mode, judul, sumber, deskripsi):
             response = model.generate_content(prompt)
             return response.text
         except Exception as e:
-            error_terakhir = e
+            catatan_error.append(f"Key #{idx}: {e}")
             continue
 
-    raise error_terakhir
+    raise Exception(" | ".join(catatan_error) if catatan_error else "Daftar API Key kosong")
 
 if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
     st.cache_data.clear()
@@ -169,7 +169,7 @@ if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
 with st.spinner("⏳ Menyerok berita dari 20 server global..."):
     semua_berita = muat_data_berita()
 
-st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir!")
+st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir! (Terdeteksi {len(daftar_api_keys)} API Key)")
 
 st.sidebar.header("🎛️ Panel Filter Konten")
 search_keyword = st.sidebar.text_input("🔍 Cari Judul / Topik Game:", "").lower()
@@ -249,8 +249,8 @@ for kat, daftar in target_tampil:
                                 try:
                                     hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "ringkas", b['judul'], b['sumber'], b['deskripsi'])
                                     st.success(hasil)
-                                except Exception:
-                                    st.warning("⏳ Semua kuota API Key hari ini sedang penuh. Silakan coba lagi besok!")
+                                except Exception as e:
+                                    st.error(f"Detail kendala: {e}")
                             
                     if col_btn2.button("📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"):
                         if not daftar_api_keys:
@@ -260,5 +260,5 @@ for kat, daftar in target_tampil:
                                 try:
                                     hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "sentimen", b['judul'], b['sumber'], b['deskripsi'])
                                     st.info(hasil)
-                                except Exception:
-                                    st.warning("⏳ Semua kuota API Key hari ini sedang penuh. Silakan coba lagi besok!")
+                                except Exception as e:
+                                    st.error(f"Detail kendala: {e}")
