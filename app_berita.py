@@ -2,35 +2,32 @@ import streamlit as st
 import feedparser
 import base64
 import glob
+import re
 from datetime import datetime, timedelta, timezone
 from time import mktime
 import google.generativeai as genai
 
-# Konfigurasi halaman
 st.set_page_config(
     page_title="Nortisce Gaming News Bulldozer",
     page_icon="🎮",
     layout="wide"
 )
 
-# Konfigurasi Gemini API (mengambil dari secrets Streamlit Cloud secara aman)
-if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+# Input API Key langsung di Sidebar (atau otomatis ambil dari Secrets jika ada)
+st.sidebar.header("🔑 Konfigurasi AI")
+default_key = st.secrets["GEMINI_API_KEY"] if "GEMINI_API_KEY" in st.secrets else ""
+api_key_input = st.sidebar.text_input("Masukkan Gemini API Key:", value=default_key, type="password")
 
-# Otomatis mencari file gambar yang mengandung kata 'chunli' di folder project
+if api_key_input:
+    genai.configure(api_key=api_key_input)
+
 def get_chunli_bg():
     for ext in ["*.jpg", "*.jpeg", "*.png", "*.webp"]:
         for file in glob.glob(ext):
             if "chunli" in file.lower():
-                if file.lower().endswith(".png"):
-                    mime = "image/png"
-                elif file.lower().endswith(".webp"):
-                    mime = "image/webp"
-                else:
-                    mime = "image/jpeg"
+                mime = "image/png" if file.lower().endswith(".png") else ("image/webp" if file.lower().endswith(".webp") else "image/jpeg")
                 with open(file, "rb") as img_file:
-                    b64 = base64.b64encode(img_file.read()).decode()
-                    return b64, mime
+                    return base64.b64encode(img_file.read()).decode(), mime
     return "", ""
 
 sidebar_bg_base64, img_mime = get_chunli_bg()
@@ -39,92 +36,46 @@ if sidebar_bg_base64:
     sidebar_css = (
         '[data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {'
         f'    background-image: linear-gradient(rgba(10, 15, 30, 0.55), rgba(10, 15, 30, 0.75)), url("data:{img_mime};base64,{sidebar_bg_base64}") !important;'
-        '    background-size: cover !important;'
-        '    background-position: center 15% !important;'
-        '    background-repeat: no-repeat !important;'
+        '    background-size: cover !important; background-position: center 15% !important; background-repeat: no-repeat !important;'
         '}'
     )
 else:
-    st.sidebar.warning("⚠️ File gambar 'chunli' belum ditemukan di folder project")
     sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.9) !important; }'
 
 custom_ui = (
     '<style>'
-    '.stApp {'
-    '    background-image: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), '
-    '                      url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop");'
-    '    background-size: cover;'
-    '    background-position: center;'
-    '    background-attachment: fixed;'
-    '}'
+    '.stApp { background-image: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
     + sidebar_css +
     'header[data-testid="stHeader"] { background-color: transparent !important; }'
-    '.metal-slug-banner {'
-    '    position: fixed; top: 0; left: 0; width: 100%; height: 60px;'
-    '    overflow: hidden; pointer-events: none; z-index: 999990;'
-    '}'
-    '@keyframes patrolShoot {'
-    '    0% { left: -60px; transform: scaleX(1); }'
-    '    47% { left: calc(100% - 210px); transform: scaleX(1); }'
-    '    50% { left: calc(100% - 210px); transform: scaleX(-1); }'
-    '    97% { left: -60px; transform: scaleX(-1); }'
-    '    100% { left: -60px; transform: scaleX(1); }'
-    '}'
-    '@keyframes runBounce {'
-    '    0%, 100% { transform: translateY(0px); }'
-    '    50% { transform: translateY(-3px); }'
-    '}'
+    '.metal-slug-banner { position: fixed; top: 0; left: 0; width: 100%; height: 60px; overflow: hidden; pointer-events: none; z-index: 999990; }'
+    '@keyframes patrolShoot { 0% { left: -60px; transform: scaleX(1); } 47% { left: calc(100% - 210px); transform: scaleX(1); } 50% { left: calc(100% - 210px); transform: scaleX(-1); } 97% { left: -60px; transform: scaleX(-1); } 100% { left: -60px; transform: scaleX(1); } }'
+    '@keyframes runBounce { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-3px); } }'
     '@keyframes legLeft { 0%, 100% { transform: translateX(0px); } 50% { transform: translateX(3px); } }'
     '@keyframes legRight { 0%, 100% { transform: translateX(0px); } 50% { transform: translateX(-3px); } }'
     '@keyframes muzzleFlash { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }'
-    '.metal-slug-runner {'
-    '    position: absolute; top: 6px; width: 60px; height: 50px;'
-    '    animation: patrolShoot 12s linear infinite;'
-    '}'
+    '.metal-slug-runner { position: absolute; top: 6px; width: 60px; height: 50px; animation: patrolShoot 12s linear infinite; }'
     '.sprite-body { width: 100%; height: 100%; animation: runBounce 0.2s infinite; }'
-    '.leg-l { animation: legLeft 0.2s infinite; }'
-    '.leg-r { animation: legRight 0.2s infinite; }'
-    '.flash { animation: muzzleFlash 0.12s infinite; }'
+    '.leg-l { animation: legLeft 0.2s infinite; } .leg-r { animation: legRight 0.2s infinite; } .flash { animation: muzzleFlash 0.12s infinite; }'
     '@keyframes bulletStream1 { 0% { opacity: 1; transform: translateX(0px); } 100% { opacity: 0; transform: translateX(260px); } }'
     '@keyframes bulletStream2 { 0% { opacity: 0; transform: translateX(0px); } 40% { opacity: 1; transform: translateX(80px); } 100% { opacity: 0; transform: translateX(260px); } }'
-    '.bullet-1, .bullet-2 {'
-    '    position: absolute; top: 23px; left: 44px; width: 16px; height: 3px;'
-    '    background: #fff200; box-shadow: 0 0 6px #ff6600, 0 0 10px #ff0000; border-radius: 2px;'
-    '}'
-    '.bullet-1 { animation: bulletStream1 0.3s linear infinite; }'
-    '.bullet-2 { animation: bulletStream2 0.3s linear infinite; }'
-    'div.stContainer {'
-    '    background-color: rgba(15, 20, 35, 0.75); padding: 15px;'
-    '    border-radius: 10px; border: 1px solid rgba(255, 120, 0, 0.3); margin-bottom: 10px;'
-    '}'
+    '.bullet-1, .bullet-2 { position: absolute; top: 23px; left: 44px; width: 16px; height: 3px; background: #fff200; box-shadow: 0 0 6px #ff6600, 0 0 10px #ff0000; border-radius: 2px; }'
+    '.bullet-1 { animation: bulletStream1 0.3s linear infinite; } .bullet-2 { animation: bulletStream2 0.3s linear infinite; }'
+    'div.stContainer { background-color: rgba(15, 20, 35, 0.75); padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 120, 0, 0.3); margin-bottom: 10px; }'
     '</style>'
-    '<div class="metal-slug-banner">'
-    '  <div class="metal-slug-runner">'
-    '    <div class="sprite-body">'
-    '      <svg viewBox="0 0 16 16" width="46" height="46" shape-rendering="crispEdges">'
-    '        <rect x="4" y="1" width="6" height="2" fill="#8B4513"/>'
-    '        <rect x="4" y="3" width="7" height="1" fill="#FF0000"/>'
-    '        <rect x="2" y="3" width="2" height="2" fill="#FF0000"/>'
-    '        <rect x="5" y="4" width="5" height="3" fill="#FFCC99"/>'
-    '        <rect x="8" y="4" width="1" height="1" fill="#000000"/>'
-    '        <rect x="4" y="7" width="6" height="4" fill="#F0F0F0"/>'
-    '        <rect x="5" y="7" width="4" height="4" fill="#3A5F0B"/>'
-    '        <rect x="6" y="8" width="8" height="2" fill="#222222"/>'
-    '        <rect x="7" y="9" width="2" height="2" fill="#555555"/>'
-    '        <polygon class="flash" points="14,7 16,9 14,11" fill="#FFAA00"/>'
-    '        <g class="leg-l"><rect x="4" y="11" width="2" height="3" fill="#2F4F4F"/><rect x="3" y="14" width="3" height="2" fill="#4A2E1B"/></g>'
-    '        <g class="leg-r"><rect x="8" y="11" width="2" height="3" fill="#2F4F4F"/><rect x="8" y="14" width="3" height="2" fill="#4A2E1B"/></g>'
-    '      </svg>'
-    '    </div>'
-    '    <div class="bullet-1"></div>'
-    '    <div class="bullet-2"></div>'
-    '  </div>'
-    '</div>'
+    '<div class="metal-slug-banner"><div class="metal-slug-runner"><div class="sprite-body">'
+    '<svg viewBox="0 0 16 16" width="46" height="46" shape-rendering="crispEdges">'
+    '<rect x="4" y="1" width="6" height="2" fill="#8B4513"/><rect x="4" y="3" width="7" height="1" fill="#FF0000"/><rect x="2" y="3" width="2" height="2" fill="#FF0000"/>'
+    '<rect x="5" y="4" width="5" height="3" fill="#FFCC99"/><rect x="8" y="4" width="1" height="1" fill="#000000"/><rect x="4" y="7" width="6" height="4" fill="#F0F0F0"/>'
+    '<rect x="5" y="7" width="4" height="4" fill="#3A5F0B"/><rect x="6" y="8" width="8" height="2" fill="#222222"/><rect x="7" y="9" width="2" height="2" fill="#555555"/>'
+    '<polygon class="flash" points="14,7 16,9 14,11" fill="#FFAA00"/>'
+    '<g class="leg-l"><rect x="4" y="11" width="2" height="3" fill="#2F4F4F"/><rect x="3" y="14" width="3" height="2" fill="#4A2E1B"/></g>'
+    '<g class="leg-r"><rect x="8" y="11" width="2" height="3" fill="#2F4F4F"/><rect x="8" y="14" width="3" height="2" fill="#4A2E1B"/></g>'
+    '</svg></div><div class="bullet-1"></div><div class="bullet-2"></div></div></div>'
 )
 st.markdown(custom_ui, unsafe_allow_html=True)
 
 st.title("🎮 Nortisce Global Gaming News Bulldozer")
-st.markdown("Menyerok berita dari **20 kanal game global terbaik** dengan filter, pencarian, dan analisis AI Gemini murni yang tajam & mendalam.")
+st.markdown("Menyerok berita dari **20 kanal game global terbaik** dengan filter, pencarian, dan analisis AI Gemini cepat.")
 
 RSS_SOURCES = {
     "IGN": "https://feeds.feedburner.com/ign/games-all",
@@ -149,6 +100,10 @@ RSS_SOURCES = {
     "Rock Paper Shotgun": "https://www.rockpapershotgun.com/feed"
 }
 
+def bersihkan_html(teks):
+    teks_bersih = re.sub(r'<[^>]+>', ' ', teks)
+    return re.sub(r'\s+', ' ', teks_bersih).strip()[:600]
+
 @st.cache_data(ttl=3600)
 def muat_data_berita():
     semua_berita = []
@@ -159,53 +114,49 @@ def muat_data_berita():
         try:
             feed = feedparser.parse(u)
             for entry in feed.entries:
-                summary_text = getattr(entry, 'summary', entry.title)
+                raw_desc = getattr(entry, 'summary', entry.title)
+                clean_desc = bersihkan_html(raw_desc)
                 if hasattr(entry, 'published_parsed') and entry.published_parsed:
                     pub_dt = datetime.fromtimestamp(mktime(entry.published_parsed), timezone.utc)
                     if pub_dt >= batas_waktu:
                         selisih_jam = (sekarang_utc - pub_dt).total_seconds() / 3600
                         selisih_hari = int(selisih_jam // 24)
-
-                        if selisih_jam < 24:
-                            label_waktu = "Today (Hari Ini)"
-                        elif selisih_hari == 1:
-                            label_waktu = "1 Day Ago (Kemarin)"
-                        else:
-                            label_waktu = f"{selisih_hari} Days Ago"
-
-                        tanggal_str = pub_dt.strftime("%d %b %Y, %H:%M")
+                        label_waktu = "Today (Hari Ini)" if selisih_jam < 24 else ("1 Day Ago (Kemarin)" if selisih_hari == 1 else f"{selisih_hari} Days Ago")
                         info = {
-                            "judul": entry.title,
-                            "link": entry.link,
-                            "sumber": nama_web,
-                            "tanggal": tanggal_str,
-                            "rentang_waktu": label_waktu,
-                            "selisih_hari": selisih_hari,
-                            "deskripsi": summary_text
+                            "judul": entry.title, "link": entry.link, "sumber": nama_web,
+                            "tanggal": pub_dt.strftime("%d %b %Y, %H:%M"),
+                            "rentang_waktu": label_waktu, "selisih_hari": selisih_hari,
+                            "deskripsi": clean_desc
                         }
                         if info not in semua_berita:
                             semua_berita.append(info)
-                else:
-                    info = {
-                        "judul": entry.title,
-                        "link": entry.link,
-                        "sumber": nama_web,
-                        "tanggal": "Terbaru",
-                        "rentang_waktu": "Terbaru / Lainnya",
-                        "selisih_hari": 99,
-                        "deskripsi": summary_text
-                    }
-                    if info not in semua_berita:
-                        semua_berita.append(info)
         except Exception:
             pass
     return semua_berita
+
+# Fungsi AI dengan Cache agar instan dan cepat
+@st.cache_data(show_spinner=False)
+def analisis_gemini_cepat(api_key, mode, judul, sumber, deskripsi):
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-2.5-flash')
+    if mode == "ringkas":
+        prompt = (
+            f"Sebagai analis industri game, bedah esensi berita dari {sumber} berikut secara tajam, unik, dan mendalam dalam 3 kalimat bahasa Indonesia (tanpa basa-basi pembuka):\n"
+            f"Judul: {judul}\nKonteks: {deskripsi}"
+        )
+    else:
+        prompt = (
+            f"Sebagai pengamat komunitas game, tentukan sentimen publik (Positif / Negatif / Netral) dan alasan tajamnya dalam 2-3 kalimat bahasa Indonesia untuk berita ini:\n"
+            f"Judul: {judul}\nKonteks: {deskripsi}"
+        )
+    response = model.generate_content(prompt)
+    return response.text
 
 if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
     st.cache_data.clear()
     st.rerun()
 
-with st.spinner("⏳ Sedang menyerok berita dari 20 server global..."):
+with st.spinner("⏳ Menyerok berita dari 20 server global..."):
     semua_berita = muat_data_berita()
 
 st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir!")
@@ -215,44 +166,13 @@ search_keyword = st.sidebar.text_input("🔍 Cari Judul / Topik Game:", "").lowe
 
 pilih_kategori = st.sidebar.selectbox(
     "📂 Pilih Kategori Berita:",
-    [
-        "Semua Kategori",
-        "🎮 Game Releases & Updates",
-        "🛠️ Tech, Hardware & Performance",
-        "🏢 Industry & Business",
-        "🏆 Esports & Competitive",
-        "🍿 Pop Culture, Media & Leaks",
-        "📌 Lainnya"
-    ]
+    ["Semua Kategori", "🎮 Game Releases & Updates", "🛠️ Tech, Hardware & Performance", "🏢 Industry & Business", "🏆 Esports & Competitive", "🍿 Pop Culture, Media & Leaks", "📌 Lainnya"]
 )
 
-daftar_web = ["Semua Website (20 Media)"] + list(RSS_SOURCES.keys())
-pilih_web = st.sidebar.selectbox(
-    "🌐 Pilih Sumber Website:",
-    daftar_web
-)
+pilih_web = st.sidebar.selectbox("🌐 Pilih Sumber Website:", ["Semua Website (20 Media)"] + list(RSS_SOURCES.keys()))
+pilih_waktu = st.sidebar.selectbox("⏰ Pilih Rentang Waktu:", ["Semua Rentang Waktu (7 Hari Terakhir)", "Today (Hari Ini)", "1 Day Ago (Kemarin)", "2 Days Ago", "3 Days Ago", "4-7 Days Ago"])
 
-pilih_waktu = st.sidebar.selectbox(
-    "⏰ Pilih Rentang Waktu:",
-    [
-        "Semua Rentang Waktu (7 Hari Terakhir)",
-        "Today (Hari Ini)",
-        "1 Day Ago (Kemarin)",
-        "2 Days Ago",
-        "3 Days Ago",
-        "4-7 Days Ago"
-    ]
-)
-
-kategori = {
-    "🎮 Game Releases & Updates": [],
-    "🛠️ Tech, Hardware & Performance": [],
-    "🏢 Industry & Business": [],
-    "🏆 Esports & Competitive": [],
-    "🍿 Pop Culture, Media & Leaks": [],
-    "📌 Lainnya": []
-}
-
+kategori = {k: [] for k in ["🎮 Game Releases & Updates", "🛠️ Tech, Hardware & Performance", "🏢 Industry & Business", "🏆 Esports & Competitive", "🍿 Pop Culture, Media & Leaks", "📌 Lainnya"]}
 keywords = {
     "🎮 Game Releases & Updates": ["release", "launch", "update", "patch", "dlc", "expansion", "out now", "beta", "season", "gameplay", "review"],
     "🛠️ Tech, Hardware & Performance": ["rtx", "gtx", "gpu", "cpu", "amd", "nvidia", "intel", "ps5 pro", "switch 2", "hardware", "monitor", "fps", "steam deck"],
@@ -264,21 +184,14 @@ keywords = {
 berita_terfilter = []
 for item in semua_berita:
     sw = item["selisih_hari"]
-    waktu_cocok = False
-
-    if pilih_waktu == "Semua Rentang Waktu (7 Hari Terakhir)":
-        waktu_cocok = True
-    elif pilih_waktu == "Today (Hari Ini)" and item["rentang_waktu"] == "Today (Hari Ini)":
-        waktu_cocok = True
-    elif pilih_waktu == "1 Day Ago (Kemarin)" and item["rentang_waktu"] == "1 Day Ago (Kemarin)":
-        waktu_cocok = True
-    elif pilih_waktu == "2 Days Ago" and sw == 2:
-        waktu_cocok = True
-    elif pilih_waktu == "3 Days Ago" and sw == 3:
-        waktu_cocok = True
-    elif pilih_waktu == "4-7 Days Ago" and (4 <= sw <= 7):
-        waktu_cocok = True
-
+    waktu_cocok = (
+        pilih_waktu == "Semua Rentang Waktu (7 Hari Terakhir)" or
+        (pilih_waktu == "Today (Hari Ini)" and item["rentang_waktu"] == "Today (Hari Ini)") or
+        (pilih_waktu == "1 Day Ago (Kemarin)" and item["rentang_waktu"] == "1 Day Ago (Kemarin)") or
+        (pilih_waktu == "2 Days Ago" and sw == 2) or
+        (pilih_waktu == "3 Days Ago" and sw == 3) or
+        (pilih_waktu == "4-7 Days Ago" and (4 <= sw <= 7))
+    )
     web_cocok = (pilih_web == "Semua Website (20 Media)") or (item["sumber"] == pilih_web)
     search_cocok = (search_keyword in item["judul"].lower()) or (search_keyword in item["sumber"].lower()) if search_keyword else True
 
@@ -287,19 +200,16 @@ for item in semua_berita:
 
 for item in berita_terfilter:
     judul_lower = item["judul"].lower()
-    masuk_kategori = False
+    masuk = False
     for kat, keys in keywords.items():
         if any(k in judul_lower for k in keys):
             kategori[kat].append(item)
-            masuk_kategori = True
+            masuk = True
             break
-    if not masuk_kategori:
+    if not masuk:
         kategori["📌 Lainnya"].append(item)
 
-if pilih_kategori == "Semua Kategori":
-    target_tampil = kategori.items()
-else:
-    target_tampil = [(pilih_kategori, kategori[pilih_kategori])]
+target_tampil = kategori.items() if pilih_kategori == "Semua Kategori" else [(pilih_kategori, kategori[pilih_kategori])]
 
 st.markdown("---")
 total_ditampilkan = sum(len(daftar) for _, daftar in target_tampil)
@@ -321,35 +231,24 @@ for kat, daftar in target_tampil:
                 with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
                     col_btn1, col_btn2 = st.columns(2)
                     
-                    # Logika Pemanggilan Gemini AI Murni yang Unik Tiap Artikel
                     if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
-                        with st.spinner("Gemini sedang menganalisis esensi dan konteks berita secara mendalam..."):
-                            try:
-                                model = genai.GenerativeModel('gemini-1.5-flash')
-                                prompt = (
-                                    f"Bertindaklah sebagai jurnalis dan analis industri game profesional. "
-                                    f"Analisis secara mendalam, tajam, dan unik judul serta konteks berita berikut dari media {b['sumber']}. "
-                                    f"Jangan gunakan format atau templat yang kaku. Berikan ulasan/ringkasan analitis yang bernas dan spesifik tentang mengapa berita ini penting dalam 3-4 kalimat berbahasa Indonesia:\n\n"
-                                    f"Judul: {b['judul']}\n"
-                                    f"Konten/Deskripsi: {b['deskripsi']}"
-                                )
-                                response = model.generate_content(prompt)
-                                st.success(response.text)
-                            except Exception as e:
-                                st.error("⚠️ Gagal memuat analisis Gemini. Pastikan API Key Gemini sudah dimasukkan ke Streamlit Cloud Secrets.")
+                        if not api_key_input:
+                            st.warning("⚠️ Tempelkan Gemini API Key kamu di kolom sidebar kiri paling atas dulu ya!")
+                        else:
+                            with st.spinner("Menganalisis..."):
+                                try:
+                                    hasil = analisis_gemini_cepat(api_key_input, "ringkas", b['judul'], b['sumber'], b['deskripsi'])
+                                    st.success(hasil)
+                                except Exception as e:
+                                    st.error(f"Gagal memanggil Gemini: {e}")
                             
-                    # Logika Sentimen Publik Gemini Murni
                     if col_btn2.button("📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"):
-                        with st.spinner("Gemini sedang memindai reaksi komunitas..."):
-                            try:
-                                model = genai.GenerativeModel('gemini-1.5-flash')
-                                prompt = (
-                                    f"Bertindaklah sebagai pengamat komunitas game global (Reddit, ResetEra, Twitter). "
-                                    f"Analisis bagaimana reaksi atau sentimen publik gamer terhadap berita berikut secara spesifik, "
-                                    f"berikan klasifikasinya (Positif, Negatif, atau Netral) beserta alasan rasionalnya dalam bahasa Indonesia:\n\n"
-                                    f"Judul: {b['judul']}"
-                                )
-                                response = model.get_content() if hasattr(model, 'get_content') else model.generate_content(prompt)
-                                st.info(response.text)
-                            except Exception as e:
-                                st.error("⚠️ Gagal memuat sentimen AI. Periksa konfigurasi API Key Anda.")
+                        if not api_key_input:
+                            st.warning("⚠️ Tempelkan Gemini API Key kamu di kolom sidebar kiri paling atas dulu ya!")
+                        else:
+                            with st.spinner("Memindai sentimen..."):
+                                try:
+                                    hasil = analisis_gemini_cepat(api_key_input, "sentimen", b['judul'], b['sumber'], b['deskripsi'])
+                                    st.info(hasil)
+                                except Exception as e:
+                                    st.error(f"Gagal memanggil Gemini: {e}")
