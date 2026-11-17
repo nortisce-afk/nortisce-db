@@ -138,7 +138,7 @@ def muat_data_berita():
 @st.cache_data(show_spinner=False)
 def analisis_gemini_cepat(api_key, mode, judul, sumber, deskripsi):
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-3.8-flash')
     if mode == "ringkas":
         prompt = (
             f"Sebagai analis industri game, bedah esensi berita dari {sumber} berikut secara tajam, unik, dan mendalam dalam 3 kalimat bahasa Indonesia (tanpa basa-basi pembuka):\n"
