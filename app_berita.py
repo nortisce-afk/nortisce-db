@@ -55,7 +55,7 @@ if "toggle_sidebar" in query_params:
 
 sidebar_left_pos = "0px" if st.session_state.sidebar_open else "-300px"
 
-# --- CLEAN GAMING UI CSS + PC CLICK-OUTSIDE OVERLAY ---
+# --- CLEAN GAMING UI CSS + CLICK-OUTSIDE OVERLAY ---
 custom_ui = (
     '<style>'
     '.stApp { background-image: linear-gradient(rgba(8, 12, 20, 0.85), rgba(8, 12, 20, 0.92)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
@@ -75,17 +75,16 @@ custom_ui = (
     '    border-right: 1px solid rgba(56, 189, 248, 0.4) !important;'
     '}'
     
-    # --- LAPISAN OVERLAY KHUSUS PC (DI LUAR 300px SIDEBAR) ---
-    + ('\n@media (min-width: 768px) {\n'
-       '    .pc-sidebar-overlay {\n'
-       '        position: fixed;\n'
-       '        top: 0;\n'
-       '        left: 300px;\n'
-       '        width: calc(100vw - 300px);\n'
-       '        height: 100vh;\n'
-       '        z-index: 999995;\n'
-       '        background: transparent;\n'
-       '    }\n'
+    # --- LAPISAN OVERLAY (KLIK DI LUAR SIDEBAR UNTUK MENUTUP) ---
+    + ('\n.sidebar-overlay {\n'
+       '    position: fixed;\n'
+       '    top: 0;\n'
+       '    left: 0;\n'
+       '    width: 100vw;\n'
+       '    height: 100vh;\n'
+       '    z-index: 999995;\n'
+       '    background-color: rgba(0, 0, 0, 0.35);\n'
+       '    backdrop-filter: blur(2px);\n'
        '}\n' if st.session_state.sidebar_open else '') +
     
     # Metal Slug Runner Animation Banner
@@ -153,8 +152,8 @@ custom_ui = (
     '    background-color: rgba(56, 189, 248, 0.25) !important;'
     '}'
     '</style>'
-    # Render overlay klik khusus PC di luar sidebar jika sidebar sedang terbuka
-    + ('<a href="?toggle_sidebar=0" class="pc-sidebar-overlay" title="Tutup Menu"></a>' if st.session_state.sidebar_open else '') +
+    # Render overlay klik di luar jika sidebar sedang terbuka
+    + ('<a href="?toggle_sidebar=0" class="sidebar-overlay" title="Tutup Menu"></a>' if st.session_state.sidebar_open else '') +
     '<div class="metal-slug-banner"><div class="metal-slug-runner"><div class="sprite-body">'
     '<svg viewBox="0 0 16 16" width="40" height="40" shape-rendering="crispEdges">'
     '<rect x="4" y="1" width="6" height="2" fill="#8B4513"/><rect x="4" y="3" width="7" height="1" fill="#FF0000"/><rect x="2" y="3" width="2" height="2" fill="#FF0000"/>'
@@ -484,7 +483,8 @@ for kat, daftar in target_tampil:
         semua_berita_flat.append(b)
 
 items_per_page = 10
-total_pages = max(1, (len(semua_berita_flat) + items_per_page - 1) // items_per_page)
+total_pages = max(1, (len(semua_berita_flat) + items_per_page - 1) / items_per_page)
+total_pages = int(total_pages)
 
 if "halaman_aktif" not in st.session_state:
     st.session_state.halaman_aktif = 1
