@@ -392,7 +392,7 @@ st.markdown("---")
 total_ditampilkan = sum(len(daftar) for _, daftar in target_tampil)
 st.info(f"Menampilkan total **{total_ditampilkan} berita** tersaring | Kategori: **{pilih_kategori}** | Sumber: **{pilih_web}**")
 
-# --- SISTEM PAGINASI TERSINKRONISASI (ATAS & BAWAH) ---
+# --- SISTEM PAGINASI TERSINKRONISASI SEMPURNA (ATAS & BAWAH) ---
 semua_berita_flat = []
 for kat, daftar in target_tampil:
     for b in daftar:
@@ -407,18 +407,22 @@ if "halaman_aktif" not in st.session_state:
 if st.session_state.halaman_aktif > total_pages:
     st.session_state.halaman_aktif = 1
 
+st.session_state.top_pagination = st.session_state.halaman_aktif
+st.session_state.bottom_pagination = st.session_state.halaman_aktif
+
 def ubah_halaman_atas():
     st.session_state.halaman_aktif = st.session_state.top_pagination
+    st.session_state.bottom_pagination = st.session_state.top_pagination
 
 def ubah_halaman_bawah():
     st.session_state.halaman_aktif = st.session_state.bottom_pagination
+    st.session_state.top_pagination = st.session_state.bottom_pagination
 
 # Paginasi Bagian Atas
 if total_pages > 1:
     st.selectbox(
         f"📄 Pilih Halaman (Total {total_pages} Page Tersedia):",
         range(1, total_pages + 1),
-        index=st.session_state.halaman_aktif - 1,
         format_func=lambda x: f"Page {x} dari {total_pages} (Menampilkan 10 Berita)",
         key="top_pagination",
         on_change=ubah_halaman_atas
@@ -474,7 +478,6 @@ if total_pages > 1:
     st.selectbox(
         f"📄 Navigasi Halaman Bawah (Total {total_pages} Page):",
         range(1, total_pages + 1),
-        index=st.session_state.halaman_aktif - 1,
         format_func=lambda x: f"Page {x} dari {total_pages}",
         key="bottom_pagination",
         on_change=ubah_halaman_bawah
