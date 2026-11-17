@@ -9,7 +9,7 @@ from time import mktime
 import google.generativeai as genai
 
 st.set_page_config(
-    page_title="Nortisce Database Gaming News",
+    page_title="Nortisce Gaming News Database",
     page_icon="🎮",
     layout="wide"
 )
@@ -74,7 +74,7 @@ custom_ui = (
 )
 st.markdown(custom_ui, unsafe_allow_html=True)
 
-st.title("🎮 Nortisce Database Gaming News")
+st.title("🎮 Nortisce Gaming News Database")
 st.markdown("Database berita game terkini dari **20 kanal global + 8 kanal lokal terbaik** lengkap dengan filter, pencarian, dan analisis AI Gemini.")
 
 RSS_SOURCES = {
