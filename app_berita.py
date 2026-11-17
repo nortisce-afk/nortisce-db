@@ -42,7 +42,7 @@ if sidebar_bg_base64:
 else:
     sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.98) !important; }'
 
-# Cek status buka/tutup sidebar via session_state untuk tombol mobile & desktop hover
+# Cek status buka/tutup sidebar via session_state
 if "sidebar_open" not in st.session_state:
     st.session_state.sidebar_open = False
 
@@ -536,7 +536,7 @@ for idx, b in enumerate(berita_paginasi):
             
             if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
                 if not daftar_api_keys:
-                    st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
+                    st.warning("⚠️ API Key belum dikonfigurisi di Streamlit Secrets.")
                 else:
                     with st.spinner("Menganalisis..."):
                         try:
