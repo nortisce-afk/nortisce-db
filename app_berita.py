@@ -42,15 +42,12 @@ if sidebar_bg_base64:
 else:
     sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.95) !important; }'
 
-# --- CLEAN GAMING UI CSS (DISEMPURNAKAN AGAR LEBIH RAPI & ELEGAN) ---
+# --- CLEAN GAMING UI CSS ---
 custom_ui = (
     '<style>'
-    # Background utama dengan gradien yang lebih clean & gelap elegan
     '.stApp { background-image: linear-gradient(rgba(8, 12, 20, 0.85), rgba(8, 12, 20, 0.92)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
     + sidebar_css +
     'header[data-testid="stHeader"] { background-color: transparent !important; }'
-    
-    # Animasi Metal Slug Banner yang minimalis di atas
     '.metal-slug-banner { position: fixed; top: 0; left: 0; width: 100%; height: 50px; overflow: hidden; pointer-events: none; z-index: 999990; }'
     '@keyframes patrolShoot { 0% { left: -60px; transform: scaleX(1); } 47% { left: calc(100% - 210px); transform: scaleX(1); } 50% { left: calc(100% - 210px); transform: scaleX(-1); } 97% { left: -60px; transform: scaleX(-1); } 100% { left: -60px; transform: scaleX(1); } }'
     '@keyframes runBounce { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-3px); } }'
@@ -64,10 +61,7 @@ custom_ui = (
     '@keyframes bulletStream2 { 0% { opacity: 0; transform: translateX(0px); } 40% { opacity: 1; transform: translateX(80px); } 100% { opacity: 0; transform: translateX(260px); } }'
     '.bullet-1, .bullet-2 { position: absolute; top: 20px; left: 44px; width: 14px; height: 2px; background: #38bdf8; box-shadow: 0 0 6px #0284c7, 0 0 10px #38bdf8; border-radius: 2px; }'
     '.bullet-1 { animation: bulletStream1 0.3s linear infinite; } .bullet-2 { animation: bulletStream2 0.3s linear infinite; }'
-    
-    # Kotak Berita (Glassmorphism & Clean Border)
-    'div.stContainer { background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); padding: 18px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.2); margin-bottom: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); }'
-    'div.stContainer:hover { border-color: rgba(56, 189, 248, 0.5); transition: all 0.3s ease; }'
+    'div.stContainer { background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); padding: 15px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.2); margin-bottom: 12px; }'
     '</style>'
     '<div class="metal-slug-banner"><div class="metal-slug-runner"><div class="sprite-body">'
     '<svg viewBox="0 0 16 16" width="40" height="40" shape-rendering="crispEdges">'
@@ -82,7 +76,7 @@ custom_ui = (
 st.markdown(custom_ui, unsafe_allow_html=True)
 
 st.title("🎮 Nortisce Gaming News Database")
-st.markdown("Database berita game terkini dari **20 kanal global + 8 kanal lokal terbaik** lengkap dengan filter, pencarian, dan analisis AI Gemini.")
+st.markdown("Database berita game terkini dari **20 kanal global + 8 kanal lokal terbaik** lengkap dengan thumbnail, filter, dan analisis AI Gemini.")
 
 RSS_SOURCES = {
     # --- 20 Kanal Global ---
@@ -122,6 +116,24 @@ def bersihkan_html(teks):
     teks_bersih = re.sub(r'<[^>]+>', ' ', teks)
     return re.sub(r'\s+', ' ', teks_bersih).strip()[:600]
 
+def ambil_thumbnail(entry):
+    # Cek apakah ada media_content atau enclosure gambar di RSS feed
+    if hasattr(entry, 'media_content') and entry.media_content:
+        for m in entry.media_content:
+            if 'url' in m:
+                return m['url']
+    if hasattr(entry, 'links') and entry.links:
+        for l in entry.links:
+            if 'type' in l and 'image' in l['type']:
+                return l['href']
+    # Cek gambar di dalam tag HTML summary/description
+    raw_html = getattr(entry, 'summary', '') + getattr(entry, 'content', [{'value': ''}][0].get('value', ''))
+    match = re.search(r'src=["\'](https?://[^"\']+\.(?:jpg|jpeg|png|webp))["\']', raw_html, re.IGNORECASE)
+    if match:
+        return match.group(1)
+    # Default placeholder game banner jika tidak ditemukan gambar
+    return "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop"
+
 @st.cache_data(ttl=3600)
 def muat_data_berita():
     semua_berita = []
@@ -134,6 +146,7 @@ def muat_data_berita():
             for entry in feed.entries:
                 raw_desc = getattr(entry, 'summary', entry.title)
                 clean_desc = bersihkan_html(raw_desc)
+                thumb_url = ambil_thumbnail(entry)
                 if hasattr(entry, 'published_parsed') and entry.published_parsed:
                     pub_dt = datetime.fromtimestamp(mktime(entry.published_parsed), timezone.utc)
                     if pub_dt >= batas_waktu:
@@ -144,7 +157,7 @@ def muat_data_berita():
                             "judul": entry.title, "link": entry.link, "sumber": nama_web,
                             "tanggal": pub_dt.strftime("%d %b %Y, %H:%M"),
                             "rentang_waktu": label_waktu, "selisih_hari": selisih_hari,
-                            "deskripsi": clean_desc
+                            "deskripsi": clean_desc, "thumbnail": thumb_url
                         }
                         if info not in semua_berita:
                             semua_berita.append(info)
@@ -216,7 +229,7 @@ if st.sidebar.button("🔄 Refresh Cache Berita", use_container_width=True):
     st.cache_data.clear()
     st.rerun()
 
-with st.spinner("⏳ Menyerok berita dari 28 server (Global & Lokal)..."):
+with st.spinner("⏳ Menyerok berita & thumbnail dari 28 server..."):
     semua_berita = muat_data_berita()
 
 st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir! (28 Kanal Media)")
@@ -232,7 +245,7 @@ pilih_kategori = st.sidebar.selectbox(
 pilih_web = st.sidebar.selectbox("🌐 Sumber Website:", ["Semua Website (28 Media)"] + list(RSS_SOURCES.keys()))
 pilih_waktu = st.sidebar.selectbox("⏰ Rentang Waktu:", ["Semua Rentang Waktu (7 Hari Terakhir)", "Today (Hari Ini)", "1 Day Ago (Kemarin)", "2 Days Ago", "3 Days Ago", "4-7 Days Ago"])
 
-# --- SIDEBAR: UPCOMING GAMES RELEASE (DI BAWAH RENTANG WAKTU) ---
+# --- SIDEBAR: UPCOMING GAMES RELEASE ---
 st.sidebar.markdown("---")
 st.sidebar.markdown("[🎮 Upcoming Games Release](https://www.ign.com/upcoming/games)", unsafe_allow_html=True)
 
@@ -285,7 +298,7 @@ if st.sidebar.button("🔁 Reset Game", use_container_width=True):
     st.session_state.ttt_winner = None
     st.rerun()
 
-# --- FILTER & TAMPILAN BERITA ---
+# --- FILTER & KATEGORISASI BERITA ---
 kategori = {k: [] for k in ["🎮 Game Releases & Updates", "🛠️ Tech, Hardware & Performance", "🏢 Industry & Business", "🏆 Esports & Competitive", "🍿 Pop Culture, Media & Leaks", "📌 Lainnya"]}
 keywords = {
     "🎮 Game Releases & Updates": ["release", "launch", "update", "patch", "dlc", "expansion", "out now", "beta", "season", "gameplay", "review"],
@@ -293,76 +306,3 @@ keywords = {
     "🏢 Industry & Business": ["acquire", "acquisition", "layoffs", "studio", "sales", "revenue", "sony", "nintendo", "microsoft", "xbox", "epic games", "valve"],
     "🏆 Esports & Competitive": ["esports", "tournament", "championship", "valorant", "pro player", "meta", "nerf", "buff"],
     "🍿 Pop Culture, Media & Leaks": ["movie", "series", "adaption", "trailer", "leak", "rumor", "hbo", "netflix"]
-}
-
-berita_terfilter = []
-for item in semua_berita:
-    sw = item["selisih_hari"]
-    waktu_cocok = (
-        pilih_waktu == "Semua Rentang Waktu (7 Hari Terakhir)" or
-        (pilih_waktu == "Today (Hari Ini)" and item["rentang_waktu"] == "Today (Hari Ini)") or
-        (pilih_waktu == "1 Day Ago (Kemarin)" and item["rentang_waktu"] == "1 Day Ago (Kemarin)") or
-        (pilih_waktu == "2 Days Ago" and sw == 2) or
-        (pilih_waktu == "3 Days Ago" and sw == 3) or
-        (pilih_waktu == "4-7 Days Ago" and (4 <= sw <= 7))
-    )
-    web_cocok = (pilih_web == "Semua Website (28 Media)") or (item["sumber"] == pilih_web)
-    search_cocok = (search_keyword in item["judul"].lower()) or (search_keyword in item["sumber"].lower()) if search_keyword else True
-
-    if waktu_cocok and web_cocok and search_cocok:
-        berita_terfilter.append(item)
-
-for item in berita_terfilter:
-    judul_lower = item["judul"].lower()
-    masuk = False
-    for kat, keys in keywords.items():
-        if any(k in judul_lower for k in keys):
-            kategori[kat].append(item)
-            masuk = True
-            break
-    if not masuk:
-        kategori["📌 Lainnya"].append(item)
-
-target_tampil = kategori.items() if pilih_kategori == "Semua Kategori" else [(pilih_kategori, kategori[pilih_kategori])]
-
-st.markdown("---")
-total_ditampilkan = sum(len(daftar) for _, daftar in target_tampil)
-st.info(f"Menampilkan **{total_ditampilkan} berita** | Kategori: **{pilih_kategori}** | Sumber: **{pilih_web}**")
-
-for kat, daftar in target_tampil:
-    if daftar:
-        st.markdown(f"### {kat} ({len(daftar)} Berita)")
-        for idx, b in enumerate(daftar):
-            with st.container():
-                col1, col2 = st.columns([4, 1])
-                with col1:
-                    st.markdown(f"**{b['judul']}**")
-                    st.caption(f"🌐 **{b['sumber']}** | 📅 {b['tanggal']} ({b['rentang_waktu']})")
-                with col2:
-                    st.markdown(f"[🔗 Buka Berita]({b['link']})")
-                
-                expander_key = f"exp_{kat}_{idx}_{b['judul'][:15]}"
-                with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
-                    col_btn1, col_btn2 = st.columns(2)
-                    
-                    if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
-                        if not daftar_api_keys:
-                            st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
-                        else:
-                            with st.spinner("Menganalisis..."):
-                                try:
-                                    hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "ringkas", b['judul'], b['sumber'], b['deskripsi'])
-                                    st.success(hasil)
-                                except Exception as e:
-                                    st.error(f"Detail kendala: {e}")
-                            
-                    if col_btn2.button("📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"):
-                        if not daftar_api_keys:
-                            st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
-                        else:
-                            with st.spinner("Memindai sentimen..."):
-                                try:
-                                    hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "sentimen", b['judul'], b['sumber'], b['deskripsi'])
-                                    st.info(hasil)
-                                except Exception as e:
-                                    st.error(f"Detail kendala: {e}")
