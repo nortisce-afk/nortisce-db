@@ -17,7 +17,7 @@ st.set_page_config(
 if "sidebar_open" not in st.session_state:
   st.session_state.sidebar_open = True
 
-# Mengambil daftar banyak API Key dari Streamlit Secrets (Diperbaiki indentasinya)
+# Mengambil daftar banyak API Key dari Streamlit Secrets
 daftar_api_keys = []
 if "GEMINI_API_KEYS" in st.secrets:
   daftar_api_keys = list(st.secrets["GEMINI_API_KEYS"])
