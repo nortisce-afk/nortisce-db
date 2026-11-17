@@ -13,7 +13,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Konfigurasi API Key otomatis dari Streamlit Secrets (bersih tanpa kotak input di sidebar)
+# Konfigurasi API Key otomatis dari Streamlit Secrets
 api_key_input = st.secrets["GEMINI_API_KEY"] if "GEMINI_API_KEY" in st.secrets else ""
 if api_key_input:
     genai.configure(api_key=api_key_input)
@@ -131,11 +131,10 @@ def muat_data_berita():
             pass
     return semua_berita
 
-# Fungsi AI dengan Cache agar instan dan cepat
+# Fungsi AI dengan Auto-Fallback (otomatis pindah ke lite jika flash limit) & Cache
 @st.cache_data(show_spinner=False)
 def analisis_gemini_cepat(api_key, mode, judul, sumber, deskripsi):
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-3.8-flash')
     if mode == "ringkas":
         prompt = (
             f"Sebagai analis industri game, bedah esensi berita dari {sumber} berikut secara tajam, unik, dan mendalam dalam 3 kalimat bahasa Indonesia (tanpa basa-basi pembuka):\n"
@@ -146,8 +145,20 @@ def analisis_gemini_cepat(api_key, mode, judul, sumber, deskripsi):
             f"As a gaming community observer, determine public sentiment (Positive / Negative / Neutral) and its sharp reasoning in 2-3 sentences of Indonesian for this news:\n"
             f"Title: {judul}\nContext: {deskripsi}"
         )
-    response = model.generate_content(prompt)
-    return response.text
+
+    daftar_model = ['gemini-3.8-flash', 'gemini-3.8-flash-lite']
+    error_terakhir = None
+
+    for nama_model in daftar_model:
+        try:
+            model = genai.GenerativeModel(nama_model)
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            error_terakhir = e
+            continue
+
+    raise error_terakhir
 
 if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
     st.cache_data.clear()
