@@ -181,4 +181,239 @@ def analisis_gemini_multi_key(keys_tuple, mode, judul, sumber, deskripsi):
             continue
         try:
             genai.configure(api_key=key.strip())
-            model = genai.Gener
+            model = genai.GenerativeModel('gemini-3.8-flash')
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            catatan_error.append(f"Key #{idx}: {e}")
+            continue
+
+    raise Exception(" | ".join(catatan_error) if catatan_error else "Daftar API Key kosong")
+
+# --- LOGIKA GAME TIC-TAC-TOE ---
+def cek_pemenang_ttt(papan):
+    pola_menang = [
+        (0, 1, 2), (3, 4, 5), (6, 7, 8),
+        (0, 3, 6), (1, 4, 7), (2, 5, 8),
+        (0, 4, 8), (2, 4, 6)
+    ]
+    for a, b, c in pola_menang:
+        if papan[a] != "" and papan[a] == papan[b] == papan[c]:
+            return papan[a]
+    if "" not in papan:
+        return "Seri"
+    return None
+
+def langkah_bot_ttt(papan):
+    kosong = [i for i, v in enumerate(papan) if v == ""]
+    if not kosong:
+        return None
+    for i in kosong:
+        salinan = papan.copy()
+        salinan[i] = "O"
+        if cek_pemenang_ttt(salinan) == "O":
+            return i
+    for i in kosong:
+        salinan = papan.copy()
+        salinan[i] = "X"
+        if cek_pemenang_ttt(salinan) == "X":
+            return i
+    if 4 in kosong:
+        return 4
+    return random.choice(kosong)
+
+if st.sidebar.button("🔄 Refresh Cache Berita", use_container_width=True):
+    st.cache_data.clear()
+    st.rerun()
+
+with st.spinner("⏳ Menyerok berita & thumbnail dari 28 server..."):
+    semua_berita = muat_data_berita()
+
+st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir! (28 Kanal Media)")
+
+st.sidebar.header("🎛️ Panel Filter")
+search_keyword = st.sidebar.text_input("🔍 Cari Judul / Game:", "").lower()
+
+pilih_kategori = st.sidebar.selectbox(
+    "📂 Kategori Berita:",
+    ["Semua Kategori", "🎮 Game Releases & Updates", "🛠️ Tech, Hardware & Performance", "🏢 Industry & Business", "🏆 Esports & Competitive", "🍿 Pop Culture, Media & Leaks", "📌 Lainnya"]
+)
+
+pilih_web = st.sidebar.selectbox("🌐 Sumber Website:", ["Semua Website (28 Media)"] + list(RSS_SOURCES.keys()))
+pilih_waktu = st.sidebar.selectbox("⏰ Rentang Waktu:", ["Semua Rentang Waktu (7 Hari Terakhir)", "Today (Hari Ini)", "1 Day Ago (Kemarin)", "2 Days Ago", "3 Days Ago", "4-7 Days Ago"])
+
+# --- SIDEBAR: UPCOMING GAMES RELEASE ---
+st.sidebar.markdown("---")
+st.sidebar.markdown("[🎮 Upcoming Games Release](https://www.ign.com/upcoming/games)", unsafe_allow_html=True)
+
+# --- MINI-GAME TIC-TAC-TOE ---
+st.sidebar.markdown("---")
+st.sidebar.subheader("🕹️ Tic-Tac-Toe")
+st.sidebar.caption("Kamu (**❌**) vs Bot (**⭕**)")
+
+if "ttt_board" not in st.session_state:
+    st.session_state.ttt_board = [""] * 9
+if "ttt_winner" not in st.session_state:
+    st.session_state.ttt_winner = None
+
+def klik_kotak_ttt(idx):
+    if st.session_state.ttt_board[idx] == "" and st.session_state.ttt_winner is None:
+        st.session_state.ttt_board[idx] = "X"
+        hasil = cek_pemenang_ttt(st.session_state.ttt_board)
+        if hasil:
+            st.session_state.ttt_winner = hasil
+        else:
+            bot_idx = langkah_bot_ttt(st.session_state.ttt_board)
+            if bot_idx is not None:
+                st.session_state.ttt_board[bot_idx] = "O"
+                st.session_state.ttt_winner = cek_pemenang_ttt(st.session_state.ttt_board)
+
+for row in range(3):
+    cols = st.sidebar.columns(3)
+    for col in range(3):
+        idx = row * 3 + col
+        val = st.session_state.ttt_board[idx]
+        label = "❌" if val == "X" else ("⭕" if val == "O" else " ")
+        cols[col].button(
+            label,
+            key=f"ttt_cell_{idx}",
+            on_click=klik_kotak_ttt,
+            args=(idx,),
+            use_container_width=True,
+            disabled=(val != "" or st.session_state.ttt_winner is not None)
+        )
+
+if st.session_state.ttt_winner == "X":
+    st.sidebar.success("🎉 Kamu Menang!")
+elif st.session_state.ttt_winner == "O":
+    st.sidebar.error("🤖 Bot Menang!")
+elif st.session_state.ttt_winner == "Seri":
+    st.sidebar.warning("🤝 Seri!")
+
+if st.sidebar.button("🔁 Reset Game", use_container_width=True):
+    st.session_state.ttt_board = [""] * 9
+    st.session_state.ttt_winner = None
+    st.rerun()
+
+# --- FILTER & KATEGORISASI BERITA ---
+kategori = {k: [] for k in ["🎮 Game Releases & Updates", "🛠️ Tech, Hardware & Performance", "🏢 Industry & Business", "🏆 Esports & Competitive", "🍿 Pop Culture, Media & Leaks", "📌 Lainnya"]}
+keywords = {
+    "🎮 Game Releases & Updates": ["release", "launch", "update", "patch", "dlc", "expansion", "out now", "beta", "season", "gameplay", "review"],
+    "🛠️ Tech, Hardware & Performance": ["rtx", "gtx", "gpu", "cpu", "amd", "nvidia", "intel", "ps5 pro", "switch 2", "hardware", "monitor", "fps", "steam deck"],
+    "🏢 Industry & Business": ["acquire", "acquisition", "layoffs", "studio", "sales", "revenue", "sony", "nintendo", "microsoft", "xbox", "epic games", "valve"],
+    "🏆 Esports & Competitive": ["esports", "tournament", "championship", "valorant", "pro player", "meta", "nerf", "buff"],
+    "🍿 Pop Culture, Media & Leaks": ["movie", "series", "adaption", "trailer", "leak", "rumor", "hbo", "netflix"]
+}
+
+berita_terfilter = []
+for item in semua_berita:
+    sw = item["selisih_hari"]
+    waktu_cocok = (
+        pilih_waktu == "Semua Rentang Waktu (7 Hari Terakhir)" or
+        (pilih_waktu == "Today (Hari Ini)" and item["rentang_waktu"] == "Today (Hari Ini)") or
+        (pilih_waktu == "1 Day Ago (Kemarin)" and item["rentang_waktu"] == "1 Day Ago (Kemarin)") or
+        (pilih_waktu == "2 Days Ago" and sw == 2) or
+        (pilih_waktu == "3 Days Ago" and sw == 3) or
+        (pilih_waktu == "4-7 Days Ago" and (4 <= sw <= 7))
+    )
+    web_cocok = (pilih_web == "Semua Website (28 Media)") or (item["sumber"] == pilih_web)
+    search_cocok = (search_keyword in item["judul"].lower()) or (search_keyword in item["sumber"].lower()) if search_keyword else True
+
+    if waktu_cocok and web_cocok and search_cocok:
+        berita_terfilter.append(item)
+
+for item in berita_terfilter:
+    judul_lower = item["judul"].lower()
+    masuk = False
+    for kat, keys in keywords.items():
+        if any(k in judul_lower for k in keys):
+            kategori[kat].append(item)
+            masuk = True
+            break
+    if not masuk:
+        kategori["📌 Lainnya"].append(item)
+
+target_tampil = kategori.items() if pilih_kategori == "Semua Kategori" else [(pilih_kategori, kategori[pilih_kategori])]
+
+st.markdown("---")
+total_ditampilkan = sum(len(daftar) for _, daftar in target_tampil)
+st.info(f"Menampilkan total **{total_ditampilkan} berita** tersaring | Kategori: **{pilih_kategori}** | Sumber: **{pilih_web}**")
+
+# --- SISTEM PAGINASI (ATAS & BAWAH) ---
+semua_berita_flat = []
+for kat, daftar in target_tampil:
+    for b in daftar:
+        b['kategori_asal'] = kat
+        semua_berita_flat.append(b)
+
+items_per_page = 10
+total_pages = max(1, (len(semua_berita_flat) + items_per_page - 1) // items_per_page)
+
+# Paginasi Bagian Atas
+if total_pages > 1:
+    current_page = st.selectbox(
+        f"📄 Pilih Halaman (Total {total_pages} Page Tersedia):",
+        range(1, total_pages + 1),
+        format_func=lambda x: f"Page {x} dari {total_pages} (Menampilkan 10 Berita)",
+        key="top_pagination"
+    )
+else:
+    current_page = 1
+
+start_idx = (current_page - 1) * items_per_page
+end_idx = start_idx + items_per_page
+berita_paginasi = semua_berita_flat[start_idx:end_idx]
+
+st.markdown(f"### 📑 Menampilkan Berita Halaman {current_page} dari {total_pages} ({len(berita_paginasi)} Berita di Halaman Ini)")
+
+for idx, b in enumerate(berita_paginasi):
+    with st.container():
+        col_img, col_txt = st.columns([1, 4])
+        
+        with col_img:
+            st.image(b['thumbnail'], use_column_width=True)
+            
+        with col_txt:
+            st.markdown(f"**[{b['judul']}]({b['link']})**")
+            st.caption(f"📂 *{b['kategori_asal']}* | 🌐 **{b['sumber']}** | 📅 {b['tanggal']} ({b['rentang_waktu']})")
+        
+        expander_key = f"exp_page_{current_page}_{idx}_{b['judul'][:10]}"
+        with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
+            col_btn1, col_btn2 = st.columns(2)
+            
+            if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
+                if not daftar_api_keys:
+                    st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
+                else:
+                    with st.spinner("Menganalisis..."):
+                        try:
+                            hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "ringkas", b['judul'], b['sumber'], b['deskripsi'])
+                            st.success(hasil)
+                        except Exception as e:
+                            st.error(f"Detail kendala: {e}")
+                    
+            if col_btn2.button("📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"):
+                if not daftar_api_keys:
+                    st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
+                else:
+                    with st.spinner("Memindai sentimen..."):
+                        try:
+                            hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "sentimen", b['judul'], b['sumber'], b['deskripsi'])
+                            st.info(hasil)
+                        except Exception as e:
+                            st.error(f"Detail kendala: {e}")
+
+# --- Paginasi Bagian Bawah (Agar tidak perlu scroll ke atas) ---
+if total_pages > 1:
+    st.markdown("---")
+    current_page_bottom = st.selectbox(
+        f"📄 Navigasi Halaman Bawah (Total {total_pages} Page):",
+        range(1, total_pages + 1),
+        index=current_page - 1,
+        format_func=lambda x: f"Page {x} dari {total_pages}",
+        key="bottom_pagination"
+    )
+    # Jika user mengubah halaman dari bawah, kita sinkronkan (opsional lewat rerun jika nilai berbeda)
+    if current_page_bottom != current_page:
+        st.session_state.top_pagination = current_page_bottom
+        st.rerun()
