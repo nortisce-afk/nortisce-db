@@ -115,22 +115,22 @@ def bersihkan_html(teks):
     return re.sub(r'\s+', ' ', teks_bersih).strip()[:600]
 
 def ambil_gambar_berita(entry):
-    # 1. Cek media_content di RSS
+    if hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
+        for t in entry.media_thumbnail:
+            if 'url' in t:
+                return t['url']
     if hasattr(entry, 'media_content') and entry.media_content:
         for m in entry.media_content:
-            if 'url' in m and m['url'].startswith('http'):
+            if 'url' in m:
                 return m['url']
-    # 2. Cek enclosures
     if hasattr(entry, 'enclosures') and entry.enclosures:
         for enc in entry.enclosures:
             if enc.get('type', '').startswith('image/') and enc.get('href'):
                 return enc.get('href')
-    # 3. Cek links
     if hasattr(entry, 'links') and entry.links:
         for l in entry.links:
             if l.get('type', '').startswith('image/') and l.get('href'):
                 return l.get('href')
-    # 4. Cari tag <img> di dalam summary / deskripsi RSS
     raw_html = ""
     if hasattr(entry, 'summary'):
         raw_html += entry.summary
@@ -138,18 +138,20 @@ def ambil_gambar_berita(entry):
         for c in entry.content:
             raw_html += c.get('value', '')
     if raw_html:
-        match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', raw_html)
-        if match:
-            src = match.group(1)
-            if src.startswith('http'):
+        img_matches = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', raw_html)
+        for src in img_matches:
+            if src.startswith('http') and not any(x in src.lower() for x in ['pixel', 'spacer', 'icon', 'logo', 'avatar', 'track']):
                 return src
                 
-    # 5. Jika tidak ada tag gambar sama sekali, gunakan thumbnail dinamis berdasarkan URL link artikel aslinya
-    link_berita = getattr(entry, 'link', '')
-    if link_berita:
-        return f"https://image.thum.io/get/width/600/crop/800/{link_berita}"
-        
-    return "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=400&auto=format&fit=crop"
+    fallback_images = [
+        "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=400&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=400&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=400&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=400&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1612287233002-b1d3ba73c552?q=80&w=400&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1560253023-3ec5d502959f?q=80&w=400&auto=format&fit=crop"
+    ]
+    return fallback_images[hash(getattr(entry, 'title', '')) % len(fallback_images)]
 
 def parse_single_feed(nama_web, url):
     berita_lokal = []
