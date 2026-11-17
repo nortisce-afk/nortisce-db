@@ -166,27 +166,37 @@ def bersihkan_html(teks):
     return re.sub(r'\s+', ' ', teks_bersih).strip()[:600]
 
 def ambil_thumbnail(entry):
-    if hasattr(entry, 'media_content') and entry.media_content:
-        for m in entry.media_content:
-            if 'url' in m:
-                return m['url']
-    if hasattr(entry, 'links') and entry.links:
-        for l in entry.links:
-            if 'type' in l and 'image' in l['type']:
-                return l['href']
-    raw_html = getattr(entry, 'summary', '') + getattr(entry, 'content', [{'value': ''}][0].get('value', ''))
-    match = re.search(r'src=["\'](https?://[^"\']+\.(?:jpg|jpeg|png|webp))["\']', raw_html, re.IGNORECASE)
-    if match:
-        return match.group(1)
-    
-    # Kumpulan gambar cadangan (fallback) bertema gaming yang clean jika gambar asli gagal/kosong
+    # Daftar gambar cadangan (fallback) bertema gaming beresolusi tinggi yang dijamin aktif & clean
     fallback_game_images = [
         "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=600&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=600&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop"
+        "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop"
     ]
-    return random.choice(fallback_game_images)
+
+    candi_url = ""
+    if hasattr(entry, 'media_content') and entry.media_content:
+        for m in entry.media_content:
+            if 'url' in m:
+                candi_url = m['url']
+                break
+    if not candi_url and hasattr(entry, 'links') and entry.links:
+        for l in entry.links:
+            if 'type' in l and 'image' in l['type']:
+                candi_url = l['href']
+                break
+    if not candi_url:
+        raw_html = getattr(entry, 'summary', '') + getattr(entry, 'content', [{'value': ''}][0].get('value', ''))
+        match = re.search(r'src=["\'](https?://[^"\']+\.(?:jpg|jpeg|png|webp))["\']', raw_html, re.IGNORECASE)
+        if match:
+            candi_url = match.group(1)
+
+    # Validasi URL: Jika domain Pure Xbox / IGN / Cloudflare yang sering blokir hotlinking, langsung ganti dengan fallback
+    if not candi_url or any(bad in candi_url.lower() for bad in ['purexbox.com', 'nintendolife.com', 'pushsquare.com', 'kickstarter', 'ads']):
+        return random.choice(fallback_game_images)
+        
+    return candi_url
 
 @st.cache_data(ttl=3600)
 def muat_data_berita():
@@ -473,11 +483,8 @@ for idx, b in enumerate(berita_paginasi):
         col_img, col_txt = st.columns([1, 4])
         
         with col_img:
-            # Menggunakan HTML tag img dengan onerror agar otomatis fallback jika gambar asal gagal dimuat
-            st.markdown(
-                f'<img src="{b["thumbnail"]}" onerror="this.onerror=null;this.src=\'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop\';" style="width:100%; border-radius:8px; object-fit:cover; aspect-ratio:16/9;" />',
-                unsafe_allow_html=True
-            )
+            # Render menggunakan st.image bawaan Streamlit yang aman dari blokir iframe/sandbox
+            st.image(b['thumbnail'], use_column_width=True)
             
         with col_txt:
             st.markdown(f"**[{b['judul']}]({b['link']})**")
