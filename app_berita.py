@@ -48,7 +48,7 @@ custom_ui = (
     '.stApp { background-image: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
     + sidebar_css +
     'header[data-testid="stHeader"] { background-color: transparent !important; }'
-    '/* Membuat background tombol, input, dan selectbox di sidebar menjadi transparan/transluen */'
+    '/* Make sidebar inputs, selectboxes, and buttons transparent/translucent */'
     '[data-testid="stSidebar"] div[data-baseweb="select"] > div, '
     '[data-testid="stSidebar"] input, '
     '[data-testid="stSidebar"] .stButton > button { '
@@ -114,6 +114,31 @@ def bersihkan_html(teks):
     teks_bersih = re.sub(r'<[^>]+>', ' ', teks)
     return re.sub(r'\s+', ' ', teks_bersih).strip()[:600]
 
+def ambil_gambar_berita(entry):
+    if hasattr(entry, 'media_content') and entry.media_content:
+        for m in entry.media_content:
+            if 'url' in m:
+                return m['url']
+    if hasattr(entry, 'enclosures') and entry.enclosures:
+        for enc in entry.enclosures:
+            if enc.get('type', '').startswith('image/'):
+                return enc.get('href')
+    if hasattr(entry, 'links') and entry.links:
+        for l in entry.links:
+            if l.get('type', '').startswith('image/'):
+                return l.get('href')
+    raw_html = ""
+    if hasattr(entry, 'summary'):
+        raw_html += entry.summary
+    if hasattr(entry, 'content'):
+        for c in entry.content:
+            raw_html += c.get('value', '')
+    if raw_html:
+        match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', raw_html)
+        if match:
+            return match.group(1)
+    return "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=400&auto=format&fit=crop"
+
 def parse_single_feed(nama_web, url):
     berita_lokal = []
     sekarang_utc = datetime.now(timezone.utc)
@@ -123,6 +148,7 @@ def parse_single_feed(nama_web, url):
         for entry in feed.entries:
             raw_desc = getattr(entry, 'summary', entry.title)
             clean_desc = bersihkan_html(raw_desc)
+            img_url = ambil_gambar_berita(entry)
             if hasattr(entry, 'published_parsed') and entry.published_parsed:
                 pub_dt = datetime.fromtimestamp(mktime(entry.published_parsed), timezone.utc)
                 if pub_dt >= batas_waktu:
@@ -133,7 +159,7 @@ def parse_single_feed(nama_web, url):
                         "judul": entry.title, "link": entry.link, "sumber": nama_web,
                         "tanggal": pub_dt.strftime("%d %b %Y, %H:%M"),
                         "rentang_waktu": label_waktu, "selisih_hari": selisih_hari,
-                        "deskripsi": clean_desc
+                        "deskripsi": clean_desc, "gambar": img_url
                     }
                     if info not in berita_lokal:
                         berita_lokal.append(info)
@@ -281,8 +307,7 @@ if st.sidebar.button("🔁 Main Ulang Tic-Tac-Toe", use_container_width=True):
     st.session_state.ttt_winner = None
     st.rerun()
 
-# --- FILTER & TAMPILAN BERITA ---
-kategori = {k: [] for k in ["🎮 Game Releases & Updates", "🛠️ Tech, Hardware & Performance", "🏢 Industry & Business", "🏆 Esports & Competitive", "🍿 Pop Culture, Media & Leaks", "📌 Lainnya"]}
+# --- FILTER BERITA ---
 keywords = {
     "🎮 Game Releases & Updates": ["release", "launch", "update", "patch", "dlc", "expansion", "out now", "beta", "season", "gameplay", "review"],
     "🛠️ Tech, Hardware & Performance": ["rtx", "gtx", "gpu", "cpu", "amd", "nvidia", "intel", "ps5 pro", "switch 2", "hardware", "monitor", "fps", "steam deck"],
@@ -306,59 +331,102 @@ for item in semua_berita:
     search_cocok = (search_keyword in item["judul"].lower()) or (search_keyword in item["sumber"].lower()) if search_keyword else True
 
     if waktu_cocok and web_cocok and search_cocok:
-        berita_terfilter.append(item)
+        if pilih_kategori == "Semua Kategori":
+            berita_terfilter.append(item)
+        else:
+            judul_lower = item["judul"].lower()
+            keys = keywords.get(pilih_kategori, [])
+            matched = any(k in judul_lower for k in keys)
+            if pilih_kategori == "📌 Lainnya":
+                any_matched = any(any(k in judul_lower for k in kw_list) for kw_list in keywords.values())
+                if not any_matched:
+                    berita_terfilter.append(item)
+            elif matched:
+                berita_terfilter.append(item)
 
-for item in berita_terfilter:
-    judul_lower = item["judul"].lower()
-    masuk = False
-    for kat, keys in keywords.items():
-        if any(k in judul_lower for k in keys):
-            kategori[kat].append(item)
-            masuk = True
-            break
-    if not masuk:
-        kategori["📌 Lainnya"].append(item)
+total_berita = len(berita_terfilter)
+items_per_page = 10
+total_pages = max(1, (total_berita + items_per_page - 1) // items_per_page)
 
-target_tampil = kategori.items() if pilih_kategori == "Semua Kategori" else [(pilih_kategori, kategori[pilih_kategori])]
+if "current_page" not in st.session_state:
+    st.session_state.current_page = 1
+
+if st.session_state.current_page > total_pages:
+    st.session_state.current_page = 1
+
+def update_page_top():
+    st.session_state.current_page = st.session_state.page_select_top
+
+def update_page_bottom():
+    st.session_state.current_page = st.session_state.page_select_bottom
 
 st.markdown("---")
-total_ditampilkan = sum(len(daftar) for _, daftar in target_tampil)
-st.info(f"Menampilkan **{total_ditampilkan} berita** | Kategori: **{pilih_kategori}** | Sumber: **{pilih_web}**")
+st.info(f"Menampilkan **{total_berita} total berita** | Kategori: **{pilih_kategori}** | Sumber: **{pilih_web}**")
 
-for kat, daftar in target_tampil:
-    if daftar:
-        st.markdown(f"### {kat} ({len(daftar)} Berita)")
-        for idx, b in enumerate(daftar):
-            with st.container():
-                col1, col2 = st.columns([4, 1])
-                with col1:
-                    st.markdown(f"**{b['judul']}**")
-                    st.caption(f"🌐 **{b['sumber']}** | 📅 {b['tanggal']} ({b['rentang_waktu']})")
-                with col2:
-                    st.markdown(f"[🔗 Buka Berita]({b['link']})")
+if total_berita > 0:
+    st.markdown("### 📄 Navigasi Halaman (Atas)")
+    page_options = list(range(1, total_pages + 1))
+    
+    selected_page_top = st.selectbox(
+        "Pilih Halaman (Atas):",
+        options=page_options,
+        index=st.session_state.current_page - 1,
+        key="page_select_top",
+        on_change=update_page_top
+    )
+    
+    start_idx = (st.session_state.current_page - 1) * items_per_page
+    end_idx = min(start_idx + items_per_page, total_berita)
+    halaman_berita = berita_terfilter[start_idx:end_idx]
+
+    st.markdown(f"Menampilkan berita **{start_idx + 1} - {end_idx}** dari total **{total_berita}** berita (Halaman {st.session_state.current_page} dari {total_pages})")
+    st.markdown("---")
+
+    for idx, b in enumerate(halaman_berita):
+        with st.container():
+            col_img, col1, col2 = st.columns([1, 3, 1])
+            with col_img:
+                st.image(b['gambar'], use_column_width=True)
+            with col1:
+                st.markdown(f"**{b['judul']}**")
+                st.caption(f"🌐 **{b['sumber']}** | 📅 {b['tanggal']} ({b['rentang_waktu']})")
+            with col2:
+                st.markdown(f"[🔗 Buka Berita]({b['link']})")
+            
+            expander_key = f"exp_{start_idx}_{idx}_{b['judul'][:15]}"
+            with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
+                col_btn1, col_btn2 = st.columns(2)
                 
-                expander_key = f"exp_{kat}_{idx}_{b['judul'][:15]}"
-                with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
-                    col_btn1, col_btn2 = st.columns(2)
-                    
-                    if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
-                        if not daftar_api_keys:
-                            st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
-                        else:
-                            with st.spinner("Menganalisis..."):
-                                try:
-                                    hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "ringkas", b['judul'], b['sumber'], b['deskripsi'])
-                                    st.success(hasil)
-                                except Exception as e:
-                                    st.error(f"Detail kendala: {e}")
-                            
-                    if col_btn2.button("📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"):
-                        if not daftar_api_keys:
-                            st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
-                        else:
-                            with st.spinner("Memindai sentimen..."):
-                                try:
-                                    hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "sentimen", b['judul'], b['sumber'], b['deskripsi'])
-                                    st.info(hasil)
-                                except Exception as e:
-                                    st.error(f"Detail kendala: {e}")
+                if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
+                    if not daftar_api_keys:
+                        st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
+                    else:
+                        with st.spinner("Menganalisis..."):
+                            try:
+                                hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "ringkas", b['judul'], b['sumber'], b['deskripsi'])
+                                st.success(hasil)
+                            except Exception as e:
+                                st.error(f"Detail kendala: {e}")
+                        
+                if col_btn2.button("📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"):
+                    if not daftar_api_keys:
+                        st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
+                    else:
+                        with st.spinner("Memindai sentimen..."):
+                            try:
+                                hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "sentimen", b['judul'], b['sumber'], b['deskripsi'])
+                                st.info(hasil)
+                            except Exception as e:
+                                st.error(f"Detail kendala: {e}")
+        st.markdown("---")
+
+    st.markdown("### 📄 Navigasi Halaman (Bawah)")
+    selected_page_bottom = st.selectbox(
+        "Pilih Halaman (Bawah):",
+        options=page_options,
+        index=st.session_state.current_page - 1,
+        key="page_select_bottom",
+        on_change=update_page_bottom
+    )
+else:
+    st.warning("Tidak ada berita yang ditemukan dengan filter tersebut.")
