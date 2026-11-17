@@ -15,47 +15,49 @@ st.set_page_config(
 
 # Inisialisasi status buka/tutup sidebar
 if "sidebar_open" not in st.session_state:
-  st.session_state.sidebar_open = True
+    st.session_state.sidebar_open = True
 
 # Mengambil daftar banyak API Key dari Streamlit Secrets
 daftar_api_keys = []
 if "GEMINI_API_KEYS" in st.secrets:
-  daftar_api_keys = list(st.secrets["GEMINI_API_KEYS"])
+    daftar_api_keys = list(st.secrets["GEMINI_API_KEYS"])
 elif "GEMINI_API_KEY" in st.secrets:
-  daftar_api_keys = [st.secrets["GEMINI_API_KEY"]]
+    daftar_api_keys = [st.secrets["GEMINI_API_KEY"]]
 
 
 def get_chunli_bg():
-  for ext in ["*.jpg", "*.jpeg", "*.png", "*.webp"]:
-    for file in glob.glob(ext):
-      if "chunli" in file.lower():
-        mime = (
-            "image/png"
-            if file.lower().endswith(".png")
-            else (
-                "image/webp" if file.lower().endswith(".webp") else "image/jpeg"
-            )
-        )
-        with open(file, "rb") as img_file:
-          return base64.b64encode(img_file.read()).decode(), mime
-  return "", ""
+    for ext in ["*.jpg", "*.jpeg", "*.png", "*.webp"]:
+        for file in glob.glob(ext):
+            if "chunli" in file.lower():
+                mime = (
+                    "image/png"
+                    if file.lower().endswith(".png")
+                    else (
+                        "image/webp"
+                        if file.lower().endswith(".webp")
+                        else "image/jpeg"
+                    )
+                )
+                with open(file, "rb") as img_file:
+                    return base64.b64encode(img_file.read()).decode(), mime
+    return "", ""
 
 
 sidebar_bg_base64, img_mime = get_chunli_bg()
 
 if sidebar_bg_base64:
-  sidebar_css = (
-      '[data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {'
-      f' background-image: linear-gradient(rgba(10, 15, 30, 0.70), rgba(10, 15, 30, 0.85)), url("data:{img_mime};base64,{sidebar_bg_base64}") !important;'
-      " background-size: cover !important; background-position: center 15%"
-      " !important; background-repeat: no-repeat !important;"
-      "}"
-  )
+    sidebar_css = (
+        '[data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {'
+        f' background-image: linear-gradient(rgba(10, 15, 30, 0.70), rgba(10, 15, 30, 0.85)), url("data:{img_mime};base64,{sidebar_bg_base64}") !important;'
+        " background-size: cover !important; background-position: center 15%"
+        " !important; background-repeat: no-repeat !important;"
+        "}"
+    )
 else:
-  sidebar_css = (
-      '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.95)'
-      " !important; }"
-  )
+    sidebar_css = (
+        '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.95)'
+        " !important; }"
+    )
 
 sidebar_left_pos = "0px" if st.session_state.sidebar_open else "-300px"
 
@@ -296,236 +298,239 @@ RSS_SOURCES = {
 
 
 def bersihkan_html(teks):
-  teks_bersih = re.sub(r"<[^>]+>", " ", teks)
-  return re.sub(r"\s+", " ", teks_bersih).strip()[:600]
+    teks_bersih = re.sub(r"<[^>]+>", " ", teks)
+    return re.sub(r"\s+", " ", teks_bersih).strip()[:600]
 
 
 def ambil_thumbnail(entry):
-  if hasattr(entry, "media_thumbnail") and entry.media_thumbnail:
-    for t in entry.media_thumbnail:
-      if "url" in t:
-        return t["url"]
-  if hasattr(entry, "media_content") and entry.media_content:
-    for m in entry.media_content:
-      if "url" in m:
-        return m["url"]
-  if hasattr(entry, "enclosures") and entry.enclosures:
-    for enc in entry.enclosures:
-      if enc.get("type", "").startswith("image/") and enc.get("href"):
-        return enc.get("href")
-  if hasattr(entry, "links") and entry.links:
-    for l in entry.links:
-      if l.get("type", "").startswith("image/") and l.get("href"):
-        return l.get("href")
-  raw_html = ""
-  if hasattr(entry, "summary"):
-    raw_html += entry.summary
-  if hasattr(entry, "content"):
-    for c in entry.content:
-      raw_html += c.get("value", "")
-  if raw_html:
-    img_matches = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', raw_html)
-    for src in img_matches:
-      if src.startswith("http") and not any(
-          x in src.lower()
-          for x in ["pixel", "spacer", "icon", "logo", "avatar", "track"]
-      ):
-        return src
+    if hasattr(entry, "media_thumbnail") and entry.media_thumbnail:
+        for t in entry.media_thumbnail:
+            if "url" in t:
+                return t["url"]
+    if hasattr(entry, "media_content") and entry.media_content:
+        for m in entry.media_content:
+            if "url" in m:
+                return m["url"]
+    if hasattr(entry, "enclosures") and entry.enclosures:
+        for enc in entry.enclosures:
+            if enc.get("type", "").startswith("image/") and enc.get("href"):
+                return enc.get("href")
+    if hasattr(entry, "links") and entry.links:
+        for l in entry.links:
+            if l.get("type", "").startswith("image/") and l.get("href"):
+                return l.get("href")
+    raw_html = ""
+    if hasattr(entry, "summary"):
+        raw_html += entry.summary
+    if hasattr(entry, "content"):
+        for c in entry.content:
+            raw_html += c.get("value", "")
+    if raw_html:
+        img_matches = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', raw_html)
+        for src in img_matches:
+            if src.startswith("http") and not any(
+                x in src.lower()
+                for x in ["pixel", "spacer", "icon", "logo", "avatar", "track"]
+            ):
+                return src
 
-  fallback_game_images = [
-      (
-          "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop"
-      ),
-      (
-          "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=600&auto=format&fit=crop"
-      ),
-      (
-          "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=600&auto=format&fit=crop"
-      ),
-      (
-          "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop"
-      ),
-      (
-          "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop"
-      ),
-  ]
-  return random.choice(fallback_game_images)
+    fallback_game_images = [
+        (
+            "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop"
+        ),
+        (
+            "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=600&auto=format&fit=crop"
+        ),
+        (
+            "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=600&auto=format&fit=crop"
+        ),
+        (
+            "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop"
+        ),
+        (
+            "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop"
+        ),
+    ]
+    return random.choice(fallback_game_images)
 
 
 @st.cache_data(ttl=3600)
 def muat_data_berita():
-  semua_berita = []
-  sekarang_utc = datetime.now(timezone.utc)
-  batas_waktu = sekarang_utc - timedelta(days=7)
+    semua_berita = []
+    sekarang_utc = datetime.now(timezone.utc)
+    batas_waktu = sekarang_utc - timedelta(days=7)
 
-  for nama_web, u in RSS_SOURCES.items():
-    try:
-      feed = feedparser.parse(u)
-      for entry in feed.entries:
-        raw_desc = getattr(entry, "summary", entry.title)
-        clean_desc = bersihkan_html(raw_desc)
-        thumb_url = ambil_thumbnail(entry)
-        if hasattr(entry, "published_parsed") and entry.published_parsed:
-          pub_dt = datetime.fromtimestamp(
-              mktime(entry.published_parsed), timezone.utc
-          )
-          if pub_dt >= batas_waktu:
-            selisih_jam = (sekarang_utc - pub_dt).total_seconds() / 3600
-            selisih_hari = int(selisih_jam // 24)
-            label_waktu = (
-                "Today (Hari Ini)"
-                if selisih_jam < 24
-                else (
-                    "1 Day Ago (Kemarin)"
-                    if selisih_hari == 1
-                    else f"{selisih_hari} Days Ago"
-                )
-            )
-            info = {
-                "judul": entry.title,
-                "link": entry.link,
-                "sumber": nama_web,
-                "tanggal": pub_dt.strftime("%d %b %Y, %H:%M"),
-                "rentang_waktu": label_waktu,
-                "selisih_hari": selisih_hari,
-                "selisih_jam": selisih_jam,
-                "deskripsi": clean_desc,
-                "thumbnail": thumb_url,
-                "datetime_obj": pub_dt,
-            }
-            if info not in semua_berita:
-              semua_berita.append(info)
-    except Exception:
-      pass
+    for nama_web, u in RSS_SOURCES.items():
+        try:
+            feed = feedparser.parse(u)
+            for entry in feed.entries:
+                raw_desc = getattr(entry, "summary", entry.title)
+                clean_desc = bersihkan_html(raw_desc)
+                thumb_url = ambil_thumbnail(entry)
+                if hasattr(entry, "published_parsed") and entry.published_parsed:
+                    pub_dt = datetime.fromtimestamp(
+                        mktime(entry.published_parsed), timezone.utc
+                    )
+                    if pub_dt >= batas_waktu:
+                        selisih_jam = (
+                            sekarang_utc - pub_dt
+                        ).total_seconds() / 3600
+                        selisih_hari = int(selisih_jam // 24)
+                        label_waktu = (
+                            "Today (Hari Ini)"
+                            if selisih_jam < 24
+                            else (
+                                "1 Day Ago (Kemarin)"
+                                if selisih_hari == 1
+                                else f"{selisih_hari} Days Ago"
+                            )
+                        )
+                        info = {
+                            "judul": entry.title,
+                            "link": entry.link,
+                            "sumber": nama_web,
+                            "tanggal": pub_dt.strftime("%d %b %Y, %H:%M"),
+                            "rentang_waktu": label_waktu,
+                            "selisih_hari": selisih_hari,
+                            "selisih_jam": selisih_jam,
+                            "deskripsi": clean_desc,
+                            "thumbnail": thumb_url,
+                            "datetime_obj": pub_dt,
+                        }
+                        if info not in semua_berita:
+                            semua_berita.append(info)
+        except Exception:
+            pass
 
-  kata_penting = []
-  for item in semua_berita:
-    kata2 = [
-        w.lower()
-        for w in re.findall(r"\b[A-Za-z]{4,}\b", item["judul"])
-        if w.lower() not in ["with", "from", "this", "that", "have", "will", "your"]
+    kata_penting = []
+    for item in semua_berita:
+        kata2 = [
+            w.lower()
+            for w in re.findall(r"\b[A-Za-z]{4,}\b", item["judul"])
+            if w.lower()
+            not in ["with", "from", "this", "that", "have", "will", "your"]
+        ]
+        kata_penting.extend(kata2)
+
+    frekuensi_topik = Counter(kata_penting)
+    hype_keywords = [
+        "gta",
+        "grand theft auto",
+        "release",
+        "trailer",
+        "leak",
+        "rumor",
+        "ps5",
+        "switch 2",
+        "remake",
+        "update",
+        "dlc",
+        "free",
+        "xbox",
+        "nintendo",
     ]
-    kata_penting.extend(kata2)
 
-  frekuensi_topik = Counter(kata_penting)
-  hype_keywords = [
-      "gta",
-      "grand theft auto",
-      "release",
-      "trailer",
-      "leak",
-      "rumor",
-      "ps5",
-      "switch 2",
-      "remake",
-      "update",
-      "dlc",
-      "free",
-      "xbox",
-      "nintendo",
-  ]
+    for item in semua_berita:
+        skor_hype = 0
+        judul_lc = item["judul"].lower()
+        for hk in hype_keywords:
+            if hk in judul_lc:
+                skor_hype += 15
+        for kata in set(re.findall(r"\b[A-Za-z]{4,}\b", item["judul"])):
+            if frekuensi_topik[kata.lower()] > 1:
+                skor_hype += frekuensi_topik[kata.lower()] * 5
+        jam_lalu = item["selisih_jam"]
+        if jam_lalu <= 24:
+            skor_hype += max(0, int(50 - (jam_lalu * 1.5)))
+        elif jam_lalu <= 72:
+            skor_hype += 15
+        item["skor_engagement"] = skor_hype
 
-  for item in semua_berita:
-    skor_hype = 0
-    judul_lc = item["judul"].lower()
-    for hk in hype_keywords:
-      if hk in judul_lc:
-        skor_hype += 15
-    for kata in set(re.findall(r"\b[A-Za-z]{4,}\b", item["judul"])):
-      if frekuensi_topik[kata.lower()] > 1:
-        skor_hype += frekuensi_topik[kata.lower()] * 5
-    jam_lalu = item["selisih_jam"]
-    if jam_lalu <= 24:
-      skor_hype += max(0, int(50 - (jam_lalu * 1.5)))
-    elif jam_lalu <= 72:
-      skor_hype += 15
-    item["skor_engagement"] = skor_hype
-
-  semua_berita.sort(key=lambda x: x["skor_engagement"], reverse=True)
-  return semua_berita
+    semua_berita.sort(key=lambda x: x["skor_engagement"], reverse=True)
+    return semua_berita
 
 
 @st.cache_data(show_spinner=False)
 def analisis_gemini_multi_key(keys_tuple, mode, judul, sumber, deskripsi):
-  if mode == "ringkas":
-    prompt = (
-        f"Sebagai analis industri game, bedah esensi berita dari {sumber}"
-        " berikut secara tajam, unik, dan mendalam dalam 3 kalimat bahasa"
-        f" Indonesia (tanpa basa-basi pembuka):\nJudul: {judul}\nKonteks:"
-        f" {deskripsi}"
-    )
-  else:
-    prompt = (
-        "As a gaming community observer, determine public sentiment (Positive"
-        " / Negative / Neutral) and its sharp reasoning in 2-3 sentences of"
-        f" Indonesian for this news:\nTitle: {judul}\nContext: {deskripsi}"
-    )
+    if mode == "ringkas":
+        prompt = (
+            f"Sebagai analis industri game, bedah esensi berita dari {sumber}"
+            " berikut secara tajam, unik, dan mendalam dalam 3 kalimat bahasa"
+            f" Indonesia (tanpa basa-basi pembuka):\nJudul: {judul}\nKonteks:"
+            f" {deskripsi}"
+        )
+    else:
+        prompt = (
+            "As a gaming community observer, determine public sentiment (Positive"
+            " / Negative / Neutral) and its sharp reasoning in 2-3 sentences of"
+            f" Indonesian for this news:\nTitle: {judul}\nContext: {deskripsi}"
+        )
 
-  catatan_error = []
-  for idx, key in enumerate(keys_tuple, start=1):
-    if not key or not key.strip():
-      continue
-    try:
-      genai.configure(api_key=key.strip())
-      model = genai.GenerativeModel("gemini-3.8-flash")
-      response = model.generate_content(prompt)
-      return response.text
-    except Exception as e:
-      catatan_error.append(f"Key #{idx}: {e}")
-      continue
+    catatan_error = []
+    for idx, key in enumerate(keys_tuple, start=1):
+        if not key or not key.strip():
+            continue
+        try:
+            genai.configure(api_key=key.strip())
+            model = genai.GenerativeModel("gemini-3.8-flash")
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            catatan_error.append(f"Key #{idx}: {e}")
+            continue
 
-  raise Exception(
-      " | ".join(catatan_error)
-      if catatan_error
-      else "Daftar API Key kosong"
-  )
+    raise Exception(
+        " | ".join(catatan_error)
+        if catatan_error
+        else "Daftar API Key kosong"
+    )
 
 
 # --- LOGIKA GAME TIC-TAC-TOE ---
 def cek_pemenang_ttt(papan):
-  pola_menang = [
-      (0, 1, 2),
-      (3, 4, 5),
-      (6, 7, 8),
-      (0, 3, 6),
-      (1, 4, 7),
-      (2, 5, 8),
-      (0, 4, 8),
-      (2, 4, 6),
-  ]
-  for a, b, c in pola_menang:
-    if papan[a] != "" and papan[a] == papan[b] == papan[c]:
-      return papan[a]
-  if "" not in papan:
-    return "Seri"
-  return None
+    pola_menang = [
+        (0, 1, 2),
+        (3, 4, 5),
+        (6, 7, 8),
+        (0, 3, 6),
+        (1, 4, 7),
+        (2, 5, 8),
+        (0, 4, 8),
+        (2, 4, 6),
+    ]
+    for a, b, c in pola_menang:
+        if papan[a] != "" and papan[a] == papan[b] == papan[c]:
+            return papan[a]
+    if "" not in papan:
+        return "Seri"
+    return None
 
 
 def langkah_bot_ttt(papan):
-  kosong = [i for i, v in enumerate(papan) if v == ""]
-  if not kosong:
-    return None
-  for i in kosong:
-    salinan = papan.copy()
-    salinan[i] = "O"
-    if cek_pemenang_ttt(salinan) == "O":
-      return i
-  for i in kosong:
-    salinan = papan.copy()
-    salinan[i] = "X"
-    if cek_pemenang_ttt(salinan) == "X":
-      return i
-  if 4 in kosong:
-    return 4
-  return random.choice(kosong)
+    kosong = [i for i, v in enumerate(papan) if v == ""]
+    if not kosong:
+        return None
+    for i in kosong:
+        salinan = papan.copy()
+        salinan[i] = "O"
+        if cek_pemenang_ttt(salinan) == "O":
+            return i
+    for i in kosong:
+        salinan = papan.copy()
+        salinan[i] = "X"
+        if cek_pemenang_ttt(salinan) == "X":
+            return i
+    if 4 in kosong:
+        return 4
+    return random.choice(kosong)
 
 
 if st.sidebar.button("🔄 Refresh Cache Berita", use_container_width=True):
-  st.cache_data.clear()
-  st.rerun()
+    st.cache_data.clear()
+    st.rerun()
 
 with st.spinner("⏳ Menyerok berita, menganalisis hype & thumbnail..."):
-  semua_berita = muat_data_berita()
+    semua_berita = muat_data_berita()
 
 st.success(
     f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari"
@@ -574,55 +579,55 @@ st.sidebar.subheader("🕹️ Tic-Tac-Toe")
 st.sidebar.caption("Kamu (**❌**) vs Bot (**⭕**)")
 
 if "ttt_board" not in st.session_state:
-  st.session_state.ttt_board = [""] * 9
+    st.session_state.ttt_board = [""] * 9
 if "ttt_winner" not in st.session_state:
-  st.session_state.ttt_winner = None
+    st.session_state.ttt_winner = None
 
 
 def klik_kotak_ttt(idx):
-  if (
-      st.session_state.ttt_board[idx] == ""
-      and st.session_state.ttt_winner is None
-  ):
-    st.session_state.ttt_board[idx] = "X"
-    hasil = cek_pemenang_ttt(st.session_state.ttt_board)
-    if hasil:
-      st.session_state.ttt_winner = hasil
-    else:
-      bot_idx = langkah_bot_ttt(st.session_state.ttt_board)
-      if bot_idx is not None:
-        st.session_state.ttt_board[bot_idx] = "O"
-        st.session_state.ttt_winner = cek_pemenang_ttt(
-            st.session_state.ttt_board
-        )
+    if (
+        st.session_state.ttt_board[idx] == ""
+        and st.session_state.ttt_winner is None
+    ):
+        st.session_state.ttt_board[idx] = "X"
+        hasil = cek_pemenang_ttt(st.session_state.ttt_board)
+        if hasil:
+            st.session_state.ttt_winner = hasil
+        else:
+            bot_idx = langkah_bot_ttt(st.session_state.ttt_board)
+            if bot_idx is not None:
+                st.session_state.ttt_board[bot_idx] = "O"
+                st.session_state.ttt_winner = cek_pemenang_ttt(
+                    st.session_state.ttt_board
+                )
 
 
 for row in range(3):
-  cols = st.sidebar.columns(3)
-  for col in range(3):
-    idx = row * 3 + col
-    val = st.session_state.ttt_board[idx]
-    label = "❌" if val == "X" else ("⭕" if val == "O" else " ")
-    cols[col].button(
-        label,
-        key=f"ttt_cell_{idx}",
-        on_click=klik_kotak_ttt,
-        args=(idx,),
-        use_container_width=True,
-        disabled=(val != "" or st.session_state.ttt_winner is not None),
-    )
+    cols = st.sidebar.columns(3)
+    for col in range(3):
+        idx = row * 3 + col
+        val = st.session_state.ttt_board[idx]
+        label = "❌" if val == "X" else ("⭕" if val == "O" else " ")
+        cols[col].button(
+            label,
+            key=f"ttt_cell_{idx}",
+            on_click=klik_kotak_ttt,
+            args=(idx,),
+            use_container_width=True,
+            disabled=(val != "" or st.session_state.ttt_winner is not None),
+        )
 
 if st.session_state.ttt_winner == "X":
-  st.sidebar.success("🎉 Kamu Menang!")
+    st.sidebar.success("🎉 Kamu Menang!")
 elif st.session_state.ttt_winner == "O":
-  st.sidebar.error("🤖 Bot Menang!")
+    st.sidebar.error("🤖 Bot Menang!")
 elif st.session_state.ttt_winner == "Seri":
-  st.sidebar.warning("🤝 Seri!")
+    st.sidebar.warning("🤝 Seri!")
 
 if st.sidebar.button("🔁 Reset Game", use_container_width=True):
-  st.session_state.ttt_board = [""] * 9
-  st.session_state.ttt_winner = None
-  st.rerun()
+    st.session_state.ttt_board = [""] * 9
+    st.session_state.ttt_winner = None
+    st.rerun()
 
 # --- FILTER & KATEGORISASI BERITA ---
 kategori = {
@@ -703,44 +708,44 @@ keywords = {
 
 berita_terfilter = []
 for item in semua_berita:
-  sw = item["selisih_hari"]
-  waktu_cocok = (
-      pilih_waktu == "Semua Rentang Waktu (7 Hari Terakhir)"
-      or (
-          pilih_waktu == "Today (Hari Ini)"
-          and item["rentang_waktu"] == "Today (Hari Ini)"
-      )
-      or (
-          pilih_waktu == "1 Day Ago (Kemarin)"
-          and item["rentang_waktu"] == "1 Day Ago (Kemarin)"
-      )
-      or (pilih_waktu == "2 Days Ago" and sw == 2)
-      or (pilih_waktu == "3 Days Ago" and sw == 3)
-      or (pilih_waktu == "4-7 Days Ago" and (4 <= sw <= 7))
-  )
-  web_cocok = (pilih_web == "Semua Website (28 Media)") or (
-      item["sumber"] == pilih_web
-  )
-  search_cocok = (
-      (search_keyword in item["judul"].lower())
-      or (search_keyword in item["sumber"].lower())
-      if search_keyword
-      else True
-  )
+    sw = item["selisih_hari"]
+    waktu_cocok = (
+        pilih_waktu == "Semua Rentang Waktu (7 Hari Terakhir)"
+        or (
+            pilih_waktu == "Today (Hari Ini)"
+            and item["rentang_waktu"] == "Today (Hari Ini)"
+        )
+        or (
+            pilih_waktu == "1 Day Ago (Kemarin)"
+            and item["rentang_waktu"] == "1 Day Ago (Kemarin)"
+        )
+        or (pilih_waktu == "2 Days Ago" and sw == 2)
+        or (pilih_waktu == "3 Days Ago" and sw == 3)
+        or (pilih_waktu == "4-7 Days Ago" and (4 <= sw <= 7))
+    )
+    web_cocok = (pilih_web == "Semua Website (28 Media)") or (
+        item["sumber"] == pilih_web
+    )
+    search_cocok = (
+        (search_keyword in item["judul"].lower())
+        or (search_keyword in item["sumber"].lower())
+        if search_keyword
+        else True
+    )
 
-  if waktu_cocok and web_cocok and search_cocok:
-    berita_terfilter.append(item)
+    if waktu_cocok and web_cocok and search_cocok:
+        berita_terfilter.append(item)
 
 for item in berita_terfilter:
-  judul_lower = item["judul"].lower()
-  masuk = False
-  for kat, keys in keywords.items():
-    if any(k in judul_lower for k in keys):
-      kategori[kat].append(item)
-      masuk = True
-      break
-  if not masuk:
-    kategori["📌 Lainnya"].append(item)
+    judul_lower = item["judul"].lower()
+    masuk = False
+    for kat, keys in keywords.items():
+        if any(k in judul_lower for k in keys):
+            kategori[kat].append(item)
+            masuk = True
+            break
+    if not masuk:
+        kategori["📌 Lainnya"].append(item)
 
 target_tampil = (
     kategori.items()
@@ -757,9 +762,9 @@ st.info(
 
 semua_berita_flat = []
 for kat, daftar in target_tampil:
-  for b in daftar:
-    b["kategori_asal"] = kat
-    semua_berita_flat.append(b)
+    for b in daftar:
+        b["kategori_asal"] = kat
+        semua_berita_flat.append(b)
 
 items_per_page = 10
 total_pages = max(
@@ -767,34 +772,34 @@ total_pages = max(
 )
 
 if "halaman_aktif" not in st.session_state:
-  st.session_state.halaman_aktif = 1
+    st.session_state.halaman_aktif = 1
 if st.session_state.halaman_aktif > total_pages:
-  st.session_state.halaman_aktif = 1
+    st.session_state.halaman_aktif = 1
 
 st.session_state.top_pagination = st.session_state.halaman_aktif
 st.session_state.bottom_pagination = st.session_state.halaman_aktif
 
 
 def ubah_halaman_atas():
-  st.session_state.halaman_aktif = st.session_state.top_pagination
-  st.session_state.bottom_pagination = st.session_state.top_pagination
+    st.session_state.halaman_aktif = st.session_state.top_pagination
+    st.session_state.bottom_pagination = st.session_state.top_pagination
 
 
 def ubah_halaman_bawah():
-  st.session_state.halaman_aktif = st.session_state.bottom_pagination
-  st.session_state.top_pagination = st.session_state.bottom_pagination
+    st.session_state.halaman_aktif = st.session_state.bottom_pagination
+    st.session_state.top_pagination = st.session_state.bottom_pagination
 
 
 if total_pages > 1:
-  st.selectbox(
-      f"📄 Pilih Halaman (Total {total_pages} Page Tersedia):",
-      range(1, total_pages + 1),
-      format_func=lambda x: (
-          f"Page {x} dari {total_pages} (Menampilkan 10 Berita)"
-      ),
-      key="top_pagination",
-      on_change=ubah_halaman_atas,
-  )
+    st.selectbox(
+        f"📄 Pilih Halaman (Total {total_pages} Page Tersedia):",
+        range(1, total_pages + 1),
+        format_func=lambda x: (
+            f"Page {x} dari {total_pages} (Menampilkan 10 Berita)"
+        ),
+        key="top_pagination",
+        on_change=ubah_halaman_atas,
+    )
 
 current_page = st.session_state.halaman_aktif
 start_idx = (current_page - 1) * items_per_page
@@ -807,62 +812,62 @@ st.markdown(
 )
 
 for idx, b in enumerate(berita_paginasi):
-  with st.container():
-    col_img, col_txt = st.columns([1, 4])
-    with col_img:
-      st.image(b["thumbnail"], use_container_width=True)
-    with col_txt:
-      st.markdown(f"**[{b['judul']}]({b['link']})**")
-      st.caption(
-          f"📂 *{b['kategori_asal']}* | 🌐 **{b['sumber']}** | 📅 {b['tanggal']}"
-          f" ({b['rentang_waktu']})"
-      )
+    with st.container():
+        col_img, col_txt = st.columns([1, 4])
+        with col_img:
+            st.image(b["thumbnail"], use_container_width=True)
+        with col_txt:
+            st.markdown(f"**[{b['judul']}]({b['link']})**")
+            st.caption(
+                f"📂 *{b['kategori_asal']}* | 🌐 **{b['sumber']}** | 📅 {b['tanggal']}"
+                f" ({b['rentang_waktu']})"
+            )
 
-    expander_key = f"exp_page_{current_page}_{idx}_{b['judul'][:10]}"
-    with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
-      col_btn1, col_btn2 = st.columns(2)
-      if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
-        if not daftar_api_keys:
-          st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
-        else:
-          with st.spinner("Menganalisis..."):
-            try:
-              hasil = analisis_gemini_multi_key(
-                  tuple(daftar_api_keys),
-                  "ringkas",
-                  b["judul"],
-                  b["sumber"],
-                  b["deskripsi"],
-              )
-              st.success(hasil)
-            except Exception as e:
-              st.error(f"Detail kendala: {e}")
+        expander_key = f"exp_page_{current_page}_{idx}_{b['judul'][:10]}"
+        with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
+            col_btn1, col_btn2 = st.columns(2)
+            if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
+                if not daftar_api_keys:
+                    st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
+                else:
+                    with st.spinner("Menganalisis..."):
+                        try:
+                            hasil = analisis_gemini_multi_key(
+                                tuple(daftar_api_keys),
+                                "ringkas",
+                                b["judul"],
+                                b["sumber"],
+                                b["deskripsi"],
+                            )
+                            st.success(hasil)
+                        except Exception as e:
+                            st.error(f"Detail kendala: {e}")
 
-      if col_btn2.button(
-          "📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"
-      ):
-        if not daftar_api_keys:
-          st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
-        else:
-          with st.spinner("Memindai sentimen..."):
-            try:
-              hasil = analisis_gemini_multi_key(
-                  tuple(daftar_api_keys),
-                  "sentimen",
-                  b["judul"],
-                  b["sumber"],
-                  b["deskripsi"],
-              )
-              st.info(hasil)
-            except Exception as e:
-              st.error(f"Detail kendala: {e}")
+            if col_btn2.button(
+                "📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"
+            ):
+                if not daftar_api_keys:
+                    st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
+                else:
+                    with st.spinner("Memindai sentimen..."):
+                        try:
+                            hasil = analisis_gemini_multi_key(
+                                tuple(daftar_api_keys),
+                                "sentimen",
+                                b["judul"],
+                                b["sumber"],
+                                b["deskripsi"],
+                            )
+                            st.info(hasil)
+                        except Exception as e:
+                            st.error(f"Detail kendala: {e}")
 
 if total_pages > 1:
-  st.markdown("---")
-  st.selectbox(
-      f"📄 Navigasi Halaman Bawah (Total {total_pages} Page):",
-      range(1, total_pages + 1),
-      format_func=lambda x: f"Page {x} dari {total_pages}",
-      key="bottom_pagination",
-      on_change=ubah_halaman_bawah,
-  )
+    st.markdown("---")
+    st.selectbox(
+        f"📄 Navigasi Halaman Bawah (Total {total_pages} Page):",
+        range(1, total_pages + 1),
+        format_func=lambda x: f"Page {x} dari {total_pages}",
+        key="bottom_pagination",
+        on_change=ubah_halaman_bawah,
+    )
