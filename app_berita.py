@@ -42,14 +42,14 @@ if sidebar_bg_base64:
 else:
     sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.98) !important; }'
 
-# --- CLEAN GAMING UI CSS + AUTO-HIDE SIDEBAR ---
+# --- CLEAN GAMING UI CSS + AUTO-HIDE SIDEBAR (DESKTOP HOVER & MOBILE SWIPE) ---
 custom_ui = (
     '<style>'
     '.stApp { background-image: linear-gradient(rgba(8, 12, 20, 0.85), rgba(8, 12, 20, 0.92)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
     + sidebar_css +
     'header[data-testid="stHeader"] { background-color: transparent !important; }'
     
-    # --- FITUR AUTO-HIDE SIDEBAR (GESER & HOVER) ---
+    # --- FITUR AUTO-HIDE SIDEBAR ---
     '[data-testid="stSidebar"] {'
     '    position: fixed !important;'
     '    top: 0 !important;'
@@ -61,19 +61,19 @@ custom_ui = (
     '    box-shadow: 5px 0 25px rgba(0, 0, 0, 0.7) !important;'
     '    border-right: 1px solid rgba(56, 189, 248, 0.4) !important;'
     '}'
-    # Munculkan sidebar saat kursor diarahkan ke area kiri (0 hingga 20px dari tepi layar) atau saat sidebar di-hover
-    'body::before {'
-    '    content: "";'
+    # Penanda garis tipis neon di tepi kiri layar
+    '.sidebar-trigger-area {'
     '    position: fixed;'
     '    top: 0;'
     '    left: 0;'
-    '    width: 14px;'
+    '    width: 16px;'
     '    height: 100vh;'
     '    z-index: 999998;'
-    '    background: linear-gradient(to right, rgba(56, 189, 248, 0.8), transparent);'
+    '    background: linear-gradient(to right, rgba(56, 189, 248, 0.9), transparent);'
     '    pointer-events: auto;'
     '}'
-    'body::before:hover + [data-testid="stSidebar"], [data-testid="stSidebar"]:hover {'
+    # Saat kursor menyentuh garis penanda atau menyentuh sidebar itu sendiri, sidebar meluncur keluar
+    '.sidebar-trigger-area:hover ~ [data-testid="stSidebar"], [data-testid="stSidebar"]:hover {'
     '    left: 0 !important;'
     '}'
     
@@ -142,6 +142,7 @@ custom_ui = (
     '    background-color: rgba(56, 189, 248, 0.25) !important;'
     '}'
     '</style>'
+    '<div class="sidebar-trigger-area"></div>'
     '<div class="metal-slug-banner"><div class="metal-slug-runner"><div class="sprite-body">'
     '<svg viewBox="0 0 16 16" width="40" height="40" shape-rendering="crispEdges">'
     '<rect x="4" y="1" width="6" height="2" fill="#8B4513"/><rect x="4" y="3" width="7" height="1" fill="#FF0000"/><rect x="2" y="3" width="2" height="2" fill="#FF0000"/>'
@@ -540,7 +541,7 @@ for idx, b in enumerate(berita_paginasi):
                             hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "sentimen", b['judul'], b['sumber'], b['deskripsi'])
                             st.info(hasil)
                         except Exception as e:
-                            st.error(f"Detail kendala:/ {e}")
+                            st.error(f"Detail kendala: {e}")
 
 # --- Paginasi Bagian Bawah (Tersinkronisasi otomatis dengan atas) ---
 if total_pages > 1:
