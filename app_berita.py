@@ -8,19 +8,21 @@ from datetime import datetime, timedelta, timezone
 from time import mktime
 import google.generativeai as genai
 
+# --- PENGATURAN HALAMAN ---
 st.set_page_config(
     page_title="Nortisce Gaming News Database",
     page_icon="🎮",
     layout="wide"
 )
 
-# Mengambil daftar banyak API Key dari Streamlit Secrets
+# --- KONFIGURASI API KEY GEMINI ---
 daftar_api_keys = []
 if "GEMINI_API_KEYS" in st.secrets:
     daftar_api_keys = list(st.secrets["GEMINI_API_KEYS"])
 elif "GEMINI_API_KEY" in st.secrets:
     daftar_api_keys = [st.secrets["GEMINI_API_KEY"]]
 
+# --- LATAR BELAKANG & CSS KUSTOM ---
 def get_chunli_bg():
     for ext in ["*.jpg", "*.jpeg", "*.png", "*.webp"]:
         for file in glob.glob(ext):
@@ -42,52 +44,13 @@ if sidebar_bg_base64:
 else:
     sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.95) !important; }'
 
-# Cek status buka/tutup sidebar via session_state
-if "sidebar_open" not in st.session_state:
-    st.session_state.sidebar_open = False
-
-# Tangkap parameter URL query untuk buka/tutup sidebar
-query_params = st.query_params
-if "toggle_sidebar" in query_params:
-    val = query_params["toggle_sidebar"]
-    st.session_state.sidebar_open = (val == "1")
-    st.rerun()
-
-sidebar_left_pos = "0px" if st.session_state.sidebar_open else "-300px"
-
-# --- CLEAN GAMING UI CSS + CLICK-OUTSIDE OVERLAY ---
 custom_ui = (
     '<style>'
     '.stApp { background-image: linear-gradient(rgba(8, 12, 20, 0.85), rgba(8, 12, 20, 0.92)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
     + sidebar_css +
     'header[data-testid="stHeader"] { background-color: transparent !important; }'
     
-    # --- POSISI & ANIMASI SIDEBAR ---
-    '[data-testid="stSidebar"] {'
-    '    position: fixed !important;'
-    '    top: 0 !important;'
-    f'    left: {sidebar_left_pos} !important;'
-    '    width: 300px !important;'
-    '    height: 100vh !important;'
-    '    z-index: 999999 !important;'
-    '    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;'
-    '    box-shadow: 5px 0 25px rgba(0, 0, 0, 0.8) !important;'
-    '    border-right: 1px solid rgba(56, 189, 248, 0.4) !important;'
-    '}'
-    
-    # --- LAPISAN OVERLAY (KLIK DI LUAR SIDEBAR UNTUK MENUTUP) ---
-    + ('\n.sidebar-overlay {\n'
-       '    position: fixed;\n'
-       '    top: 0;\n'
-       '    left: 0;\n'
-       '    width: 100vw;\n'
-       '    height: 100vh;\n'
-       '    z-index: 999995;\n'
-       '    background-color: rgba(0, 0, 0, 0.35);\n'
-       '    backdrop-filter: blur(2px);\n'
-       '}\n' if st.session_state.sidebar_open else '') +
-    
-    # Metal Slug Runner Animation Banner
+    # Animasi Metal Slug Banner
     '.metal-slug-banner { position: fixed; top: 0; left: 0; width: 100%; height: 50px; overflow: hidden; pointer-events: none; z-index: 999990; }'
     '@keyframes patrolShoot { 0% { left: -60px; transform: scaleX(1); } 47% { left: calc(100% - 210px); transform: scaleX(1); } 50% { left: calc(100% - 210px); transform: scaleX(-1); } 97% { left: -60px; transform: scaleX(-1); } 100% { left: -60px; transform: scaleX(1); } }'
     '@keyframes runBounce { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-3px); } }'
@@ -118,25 +81,16 @@ custom_ui = (
     '}'
     
     # Dropdown & Input Transparan Penuh
-    'div[data-baseweb="select"],'
-    'div[data-baseweb="select"] > div,'
-    'div[data-baseweb="select"] > div > div,'
-    'div[data-baseweb="input"],'
-    'div[data-baseweb="input"] > div,'
-    'div[data-baseweb="base-input"],'
-    '.stSelectbox div[data-baseweb="select"] > div,'
-    '.stTextInput div[data-baseweb="input"] {'
+    'div[data-baseweb="select"], div[data-baseweb="select"] > div, div[data-baseweb="select"] > div > div, div[data-baseweb="input"], div[data-baseweb="input"] > div, div[data-baseweb="base-input"], .stSelectbox div[data-baseweb="select"] > div, .stTextInput div[data-baseweb="input"] {'
     '    background-color: transparent !important;'
     '    background: transparent !important;'
     '    color: #f8fafc !important;'
     '}'
-    'div[data-baseweb="select"] > div,'
-    'div[data-baseweb="base-input"] {'
+    'div[data-baseweb="select"] > div, div[data-baseweb="base-input"] {'
     '    border: 1px solid rgba(56, 189, 248, 0.45) !important;'
     '    border-radius: 8px !important;'
     '}'
-    'div[data-baseweb="select"] > div:hover,'
-    'div[data-baseweb="base-input"]:hover {'
+    'div[data-baseweb="select"] > div:hover, div[data-baseweb="base-input"]:hover {'
     '    border-color: #38bdf8 !important;'
     '}'
     'div[data-baseweb="input"] input {'
@@ -152,8 +106,6 @@ custom_ui = (
     '    background-color: rgba(56, 189, 248, 0.25) !important;'
     '}'
     '</style>'
-    # Render overlay klik di luar jika sidebar sedang terbuka
-    + ('<a href="?toggle_sidebar=0" class="sidebar-overlay" title="Tutup Menu"></a>' if st.session_state.sidebar_open else '') +
     '<div class="metal-slug-banner"><div class="metal-slug-runner"><div class="sprite-body">'
     '<svg viewBox="0 0 16 16" width="40" height="40" shape-rendering="crispEdges">'
     '<rect x="4" y="1" width="6" height="2" fill="#8B4513"/><rect x="4" y="3" width="7" height="1" fill="#FF0000"/><rect x="2" y="3" width="2" height="2" fill="#FF0000"/>'
@@ -166,11 +118,13 @@ custom_ui = (
 )
 st.markdown(custom_ui, unsafe_allow_html=True)
 
+# --- HEADER UTAMA ---
 st.title("🎮 Nortisce Gaming News Database")
 st.markdown("Database berita game terkini dari **20 kanal global + 8 kanal lokal terbaik** lengkap dengan thumbnail, filter, dan analisis AI Gemini.")
 
+# --- SUMBER RSS BERITA ---
 RSS_SOURCES = {
-    # --- 20 Kanal Global ---
+    # 20 Kanal Global
     "IGN": "https://feeds.feedburner.com/ign/games-all",
     "GameSpot": "https://www.gamespot.com/feeds/news/",
     "Gematsu": "https://www.gematsu.com/feed",
@@ -192,7 +146,7 @@ RSS_SOURCES = {
     "Wccftech": "https://wccftech.com/feed",
     "Rock Paper Shotgun": "https://www.rockpapershotgun.com/feed",
 
-    # --- 8 Kanal Lokal Indonesia ---
+    # 8 Kanal Lokal Indonesia
     "IDN Times Game": "https://news.google.com/rss/search?q=site:idntimes.com+game&hl=id&gl=ID&ceid=ID:id",
     "GGWP ID": "https://news.google.com/rss/search?q=site:ggwp.id+game&hl=id&gl=ID&ceid=ID:id",
     "Hybrid Indonesia": "https://news.google.com/rss/search?q=site:hybrid.co.id+game&hl=id&gl=ID&ceid=ID:id",
@@ -269,7 +223,7 @@ def muat_data_berita():
         except Exception:
             pass
     
-    # Algoritma Hype & Engagement Scoring
+    # Skor Engagement & Hype
     kata_penting = []
     for item in semua_berita:
         kata2 = [w.lower() for w in re.findall(r'\b[A-Za-z]{4,}\b', item["judul"]) if w.lower() not in ['with', 'from', 'this', 'that', 'have', 'will', 'your']]
@@ -326,7 +280,7 @@ def analisis_gemini_multi_key(keys_tuple, mode, judul, sumber, deskripsi):
 
     raise Exception(" | ".join(catatan_error) if catatan_error else "Daftar API Key kosong")
 
-# --- LOGIKA GAME TIC-TAC-TOE ---
+# --- LOGIKA MINI-GAME TIC-TAC-TOE ---
 def cek_pemenang_ttt(papan):
     pola_menang = [
         (0, 1, 2), (3, 4, 5), (6, 7, 8),
@@ -358,6 +312,7 @@ def langkah_bot_ttt(papan):
         return 4
     return random.choice(kosong)
 
+# --- SIDEBAR & PANEL FILTER ---
 if st.sidebar.button("🔄 Refresh Cache Berita", use_container_width=True):
     st.cache_data.clear()
     st.rerun()
@@ -378,11 +333,10 @@ pilih_kategori = st.sidebar.selectbox(
 pilih_web = st.sidebar.selectbox("🌐 Sumber Website:", ["Semua Website (28 Media)"] + list(RSS_SOURCES.keys()))
 pilih_waktu = st.sidebar.selectbox("⏰ Rentang Waktu:", ["Semua Rentang Waktu (7 Hari Terakhir)", "Today (Hari Ini)", "1 Day Ago (Kemarin)", "2 Days Ago", "3 Days Ago", "4-7 Days Ago"])
 
-# --- SIDEBAR: UPCOMING GAMES RELEASE ---
 st.sidebar.markdown("---")
 st.sidebar.markdown("[🎮 Upcoming Games Release](https://www.ign.com/upcoming/games)", unsafe_allow_html=True)
 
-# --- MINI-GAME TIC-TAC-TOE ---
+# Tic-Tac-Toe Widget di Sidebar
 st.sidebar.markdown("---")
 st.sidebar.subheader("🕹️ Tic-Tac-Toe")
 st.sidebar.caption("Kamu (**❌**) vs Bot (**⭕**)")
@@ -475,7 +429,7 @@ st.markdown("---")
 total_ditampilkan = sum(len(daftar) for _, daftar in target_tampil)
 st.info(f"Menampilkan total **{total_ditampilkan} berita** tersaring (Diurutkan berdasarkan Engagement & Hype Tertinggi) | Kategori: **{pilih_kategori}** | Sumber: **{pilih_web}**")
 
-# --- SISTEM PAGINASI TERSINKRONISASI SEMPURNA (ATAS & BAWAH) ---
+# --- SISTEM PAGINASI ---
 semua_berita_flat = []
 for kat, daftar in target_tampil:
     for b in daftar:
@@ -483,8 +437,7 @@ for kat, daftar in target_tampil:
         semua_berita_flat.append(b)
 
 items_per_page = 10
-total_pages = max(1, (len(semua_berita_flat) + items_per_page - 1) / items_per_page)
-total_pages = int(total_pages)
+total_pages = max(1, (len(semua_berita_flat) + items_per_page - 1) // items_per_page)
 
 if "halaman_aktif" not in st.session_state:
     st.session_state.halaman_aktif = 1
@@ -502,7 +455,7 @@ def ubah_halaman_bawah():
     st.session_state.halaman_aktif = st.session_state.bottom_pagination
     st.session_state.top_pagination = st.session_state.bottom_pagination
 
-# Paginasi Bagian Atas
+# Paginasi Atas
 if total_pages > 1:
     st.selectbox(
         f"📄 Pilih Halaman (Total {total_pages} Page Tersedia):",
@@ -519,6 +472,7 @@ berita_paginasi = semua_berita_flat[start_idx:end_idx]
 
 st.markdown(f"### 📑 Menampilkan Berita Halaman {current_page} dari {total_pages} ({len(berita_paginasi)} Berita di Halaman Ini)")
 
+# --- RENDER KARTU BERITA ---
 for idx, b in enumerate(berita_paginasi):
     with st.container():
         col_img, col_txt = st.columns([1, 4])
@@ -556,7 +510,7 @@ for idx, b in enumerate(berita_paginasi):
                         except Exception as e:
                             st.error(f"Detail kendala: {e}")
 
-# --- Paginasi Bagian Bawah (Tersinkronisasi otomatis dengan atas) ---
+# Paginasi Bawah
 if total_pages > 1:
     st.markdown("---")
     st.selectbox(
