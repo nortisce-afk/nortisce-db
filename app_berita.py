@@ -42,7 +42,7 @@ if sidebar_bg_base64:
 else:
     sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.95) !important; }'
 
-# --- CLEAN GAMING UI CSS ---
+# --- CLEAN GAMING UI CSS (TRANSPARAN PENUH) ---
 custom_ui = (
     '<style>'
     '.stApp { background-image: linear-gradient(rgba(8, 12, 20, 0.85), rgba(8, 12, 20, 0.92)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
@@ -61,7 +61,46 @@ custom_ui = (
     '@keyframes bulletStream2 { 0% { opacity: 0; transform: translateX(0px); } 40% { opacity: 1; transform: translateX(80px); } 100% { opacity: 0; transform: translateX(260px); } }'
     '.bullet-1, .bullet-2 { position: absolute; top: 20px; left: 44px; width: 14px; height: 2px; background: #38bdf8; box-shadow: 0 0 6px #0284c7, 0 0 10px #38bdf8; border-radius: 2px; }'
     '.bullet-1 { animation: bulletStream1 0.3s linear infinite; } .bullet-2 { animation: bulletStream2 0.3s linear infinite; }'
-    'div.stContainer { background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); padding: 15px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.2); margin-bottom: 12px; }'
+    
+    # Kartu Berita Clean
+    'div.stContainer { background-color: rgba(15, 23, 42, 0.45); backdrop-filter: blur(8px); padding: 15px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.25); margin-bottom: 12px; }'
+    
+    # Membuat SEMUA tombol (termasuk Refresh Cache Berita) menjadi transparan
+    'div.stButton > button {'
+    '    background-color: transparent !important;'
+    '    border: 1px solid rgba(56, 189, 248, 0.45) !important;'
+    '    color: #f8fafc !important;'
+    '    border-radius: 8px !important;'
+    '}'
+    'div.stButton > button:hover {'
+    '    background-color: rgba(56, 189, 248, 0.15) !important;'
+    '    border-color: #38bdf8 !important;'
+    '}'
+    
+    # Membuat SEMUA dropdown (Selectbox) & kotak input teks menjadi transparan penuh
+    'div[data-baseweb="select"] > div,'
+    'div[data-baseweb="input"] > div,'
+    'div[data-baseweb="base-input"] {'
+    '    background-color: transparent !important;'
+    '    border: 1px solid rgba(56, 189, 248, 0.45) !important;'
+    '    border-radius: 8px !important;'
+    '    color: #f8fafc !important;'
+    '}'
+    'div[data-baseweb="input"] input {'
+    '    background-color: transparent !important;'
+    '    color: #f8fafc !important;'
+    '}'
+    'div[data-baseweb="select"] > div:hover,'
+    'div[data-baseweb="input"] > div:hover {'
+    '    border-color: #38bdf8 !important;'
+    '}'
+    
+    # Menu list saat dropdown diklik dibuka
+    'ul[role="listbox"], div[data-baseweb="popover"] > div {'
+    '    background-color: rgba(10, 15, 28, 0.92) !important;'
+    '    backdrop-filter: blur(12px) !important;'
+    '    border: 1px solid rgba(56, 189, 248, 0.4) !important;'
+    '}'
     '</style>'
     '<div class="metal-slug-banner"><div class="metal-slug-runner"><div class="sprite-body">'
     '<svg viewBox="0 0 16 16" width="40" height="40" shape-rendering="crispEdges">'
@@ -413,7 +452,6 @@ if total_pages > 1:
         format_func=lambda x: f"Page {x} dari {total_pages}",
         key="bottom_pagination"
     )
-    # Jika user mengubah halaman dari bawah, kita sinkronkan (opsional lewat rerun jika nilai berbeda)
     if current_page_bottom != current_page:
         st.session_state.top_pagination = current_page_bottom
         st.rerun()
