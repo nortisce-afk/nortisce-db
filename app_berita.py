@@ -64,14 +64,16 @@ custom_ui = (
     + sidebar_css
     + 'header[data-testid="stHeader"] { background-color: transparent'
     " !important; }"
-    # CSS Transparan untuk Tombol, Selectbox, & Input Box (Filter, Refresh, dan Navigasi Page)
-    'div.stButton > button, button[kind="secondary"] { background-color:'
-    " rgba(15, 20, 35, 0.6) !important; border: 1px solid rgba(255, 120, 0,"
-    " 0.4) !important; color: #ffffff !important; border-radius: 8px !important;"
-    " backdrop-filter: blur(4px); }"
-    'div.stButton > button:hover, button[kind="secondary"]:hover {'
+    # CSS Transparan untuk Tombol, Selectbox, & Input Box (Filter, Refresh, Navigasi Page, & Link Upcoming)
+    'div.stButton > button, button[kind="secondary"], .stSidebar .stLinkButton > a {'
+    " background-color: rgba(15, 20, 35, 0.6) !important; border: 1px solid"
+    " rgba(255, 120, 0, 0.4) !important; color: #ffffff !important; border-radius:"
+    " 8px !important; backdrop-filter: blur(4px); text-align: center;"
+    " text-decoration: none; display: block; padding: 0.5rem 1rem;"
+    "}"
+    'div.stButton > button:hover, button[kind="secondary"]:hover, .stSidebar .stLinkButton > a:hover {'
     " background-color: rgba(255, 120, 0, 0.25) !important; border-color:"
-    " #ff7800 !important; }"
+    " #ff7800 !important; color: #ffffff !important; }"
     'div[data-baseweb="select"] > div, div[data-baseweb="base-input"],'
     " div[data-baseweb=\"input\"] { background-color: rgba(15, 20, 35, 0.6)"
     " !important; background: rgba(15, 20, 35, 0.6) !important; border: 1px"
@@ -391,6 +393,11 @@ pilih_waktu = st.sidebar.selectbox(
         "3 Days Ago",
         "4-7 Days Ago",
     ],
+)
+
+# Fitur Upcoming Games ditambahkan di bawah Pilih Rentang Waktu
+st.sidebar.markdown(
+    "[🎮 Upcoming Games Release](https://www.ign.com/upcoming/games)"
 )
 
 # --- MINI-GAME TIC-TAC-TOE ---
