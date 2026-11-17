@@ -386,7 +386,7 @@ if total_berita > 0:
         with st.container():
             col_img, col1, col2 = st.columns([1, 3, 1])
             with col_img:
-                st.image(b['gambar'], use_column_width=True)
+                st.image(b.get('gambar', 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=400&auto=format&fit=crop'), use_container_width=True)
             with col1:
                 st.markdown(f"**{b['judul']}**")
                 st.caption(f"🌐 **{b['sumber']}** | 📅 {b['tanggal']} ({b['rentang_waktu']})")
