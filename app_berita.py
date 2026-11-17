@@ -115,7 +115,7 @@ def bersihkan_html(teks):
     return re.sub(r'\s+', ' ', teks_bersih).strip()[:600]
 
 def ambil_gambar_berita(entry):
-    # 1. Cek media:content di RSS
+    # 1. Cek media_content di RSS
     if hasattr(entry, 'media_content') and entry.media_content:
         for m in entry.media_content:
             if 'url' in m and m['url'].startswith('http'):
@@ -143,12 +143,12 @@ def ambil_gambar_berita(entry):
             src = match.group(1)
             if src.startswith('http'):
                 return src
-    
-    # 5. Fallback menggunakan API thumbnail publik berbasis URL link berita agar setiap link memiliki gambar unik dari situsnya
+                
+    # 5. Jika tidak ada tag gambar sama sekali, gunakan thumbnail dinamis berdasarkan URL link artikel aslinya
     link_berita = getattr(entry, 'link', '')
     if link_berita:
         return f"https://image.thum.io/get/width/600/crop/800/{link_berita}"
-    
+        
     return "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=400&auto=format&fit=crop"
 
 def parse_single_feed(nama_web, url):
@@ -398,7 +398,7 @@ if total_berita > 0:
         with st.container():
             col_img, col1, col2 = st.columns([1, 3, 1])
             with col_img:
-                st.image(b.get('gambar', 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=400&auto=format&fit=crop'), use_container_width=True)
+                st.image(b.get('gambar', 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=400&auto=format&fit=crop'), use_container_width=True)
             with col1:
                 st.markdown(f"**{b['judul']}**")
                 st.caption(f"🌐 **{b['sumber']}** | 📅 {b['tanggal']} ({b['rentang_waktu']})")
