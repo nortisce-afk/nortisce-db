@@ -6,6 +6,7 @@ import re
 import random
 from datetime import datetime, timedelta, timezone
 from time import mktime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import google.generativeai as genai
 
 st.set_page_config(
@@ -78,7 +79,6 @@ st.title("🎮 Nortisce Global Gaming News Bulldozer")
 st.markdown("Menyerok berita dari **20 kanal global pilihan** dengan filter, pencarian, dan analisis AI Gemini cepat.")
 
 RSS_SOURCES = {
-    # 20 Kanal Global
     "IGN": "https://feeds.feedburner.com/ign/games-all",
     "GameSpot": "https://www.gamespot.com/feeds/news/",
     "Gematsu": "https://www.gematsu.com/feed",
@@ -105,34 +105,42 @@ def bersihkan_html(teks):
     teks_bersih = re.sub(r'<[^>]+>', ' ', teks)
     return re.sub(r'\s+', ' ', teks_bersih).strip()[:600]
 
+def parse_single_feed(nama_web, url):
+    berita_lokal = []
+    sekarang_utc = datetime.now(timezone.utc)
+    batas_waktu = sekarang_utc - timedelta(days=7)
+    try:
+        feed = feedparser.parse(url)
+        for entry in feed.entries:
+            raw_desc = getattr(entry, 'summary', entry.title)
+            clean_desc = bersihkan_html(raw_desc)
+            if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                pub_dt = datetime.fromtimestamp(mktime(entry.published_parsed), timezone.utc)
+                if pub_dt >= batas_waktu:
+                    selisih_jam = (sekarang_utc - pub_dt).total_seconds() / 3600
+                    selisih_hari = int(selisih_jam // 24)
+                    label_waktu = "Today (Hari Ini)" if selisih_jam < 24 else ("1 Day Ago (Kemarin)" if selisih_hari == 1 else f"{selisih_hari} Days Ago")
+                    info = {
+                        "judul": entry.title, "link": entry.link, "sumber": nama_web,
+                        "tanggal": pub_dt.strftime("%d %b %Y, %H:%M"),
+                        "rentang_waktu": label_waktu, "selisih_hari": selisih_hari,
+                        "deskripsi": clean_desc
+                    }
+                    if info not in berita_lokal:
+                        berita_lokal.append(info)
+    except Exception:
+        pass
+    return berita_lokal
+
 @st.cache_data(ttl=3600)
 def muat_data_berita():
     semua_berita = []
-    sekarang_utc = datetime.now(timezone.utc)
-    batas_waktu = sekarang_utc - timedelta(days=7)
-
-    for nama_web, u in RSS_SOURCES.items():
-        try:
-            feed = feedparser.parse(u)
-            for entry in feed.entries:
-                raw_desc = getattr(entry, 'summary', entry.title)
-                clean_desc = bersihkan_html(raw_desc)
-                if hasattr(entry, 'published_parsed') and entry.published_parsed:
-                    pub_dt = datetime.fromtimestamp(mktime(entry.published_parsed), timezone.utc)
-                    if pub_dt >= batas_waktu:
-                        selisih_jam = (sekarang_utc - pub_dt).total_seconds() / 3600
-                        selisih_hari = int(selisih_jam // 24)
-                        label_waktu = "Today (Hari Ini)" if selisih_jam < 24 else ("1 Day Ago (Kemarin)" if selisih_hari == 1 else f"{selisih_hari} Days Ago")
-                        info = {
-                            "judul": entry.title, "link": entry.link, "sumber": nama_web,
-                            "tanggal": pub_dt.strftime("%d %b %Y, %H:%M"),
-                            "rentang_waktu": label_waktu, "selisih_hari": selisih_hari,
-                            "deskripsi": clean_desc
-                        }
-                        if info not in semua_berita:
-                            semua_berita.append(info)
-        except Exception:
-            pass
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {executor.submit(parse_single_feed, nama, url): nama for nama, url in RSS_SOURCES.items()}
+        for future in as_completed(futures):
+            hasil_feed = future.result()
+            if hasil_feed:
+                semua_berita.extend(hasil_feed)
     return semua_berita
 
 @st.cache_data(show_spinner=False)
@@ -199,7 +207,7 @@ if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
     st.cache_data.clear()
     st.rerun()
 
-with st.spinner("⏳ Menyerok berita dari 20 server global..."):
+with st.spinner("⏳ Menyerok berita dari 20 server global secara paralel..."):
     semua_berita = muat_data_berita()
 
 st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir! (20 Kanal Media Global)")
@@ -344,4 +352,4 @@ for kat, daftar in target_tampil:
                                     hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "sentimen", b['judul'], b['sumber'], b['deskripsi'])
                                     st.info(hasil)
                                 except Exception as e:
-                                    st.error(f"Detail kendala: {e}")
+                                    st.error2(f"Detail kendala: {e}")
