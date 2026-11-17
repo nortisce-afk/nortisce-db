@@ -35,83 +35,19 @@ sidebar_bg_base64, img_mime = get_chunli_bg()
 if sidebar_bg_base64:
     sidebar_css = (
         '[data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {'
-        f'    background-image: linear-gradient(rgba(10, 15, 30, 0.85), rgba(10, 15, 30, 0.95)), url("data:{img_mime};base64,{sidebar_bg_base64}") !important;'
+        f'    background-image: linear-gradient(rgba(10, 15, 30, 0.70), rgba(10, 15, 30, 0.85)), url("data:{img_mime};base64,{sidebar_bg_base64}") !important;'
         '    background-size: cover !important; background-position: center 15% !important; background-repeat: no-repeat !important;'
         '}'
     )
 else:
-    sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.98) !important; }'
+    sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.95) !important; }'
 
-# Cek status buka/tutup sidebar via session_state (untuk klik ikon panah di mobile/desktop)
-if "sidebar_open" not in st.session_state:
-    st.session_state.sidebar_open = False
-
-sidebar_left_pos = "0px" if st.session_state.sidebar_open else "-300px"
-
-# --- CLEAN GAMING UI CSS + NEON ARROW TRIGGER ---
+# --- CLEAN GAMING UI CSS (TRANSPARAN PENUH & ELEGAN) ---
 custom_ui = (
     '<style>'
     '.stApp { background-image: linear-gradient(rgba(8, 12, 20, 0.85), rgba(8, 12, 20, 0.92)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
     + sidebar_css +
     'header[data-testid="stHeader"] { background-color: transparent !important; }'
-    
-    # --- FITUR SIDEBAR AUTO-HIDE & ANIMASI ---
-    '[data-testid="stSidebar"] {'
-    '    position: fixed !important;'
-    '    top: 0 !important;'
-    f'    left: {sidebar_left_pos} !important;'
-    '    width: 300px !important;'
-    '    height: 100vh !important;'
-    '    z-index: 999999 !important;'
-    '    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;'
-    '    box-shadow: 5px 0 25px rgba(0, 0, 0, 0.8) !important;'
-    '    border-right: 1px solid rgba(56, 189, 248, 0.4) !important;'
-    '}'
-    
-    # Tombol Panah Neon di Tepi Kiri Layar
-    '.neon-arrow-btn {'
-    '    position: fixed;'
-    '    top: 50%;'
-    '    left: 0;'
-    '    transform: translateY(-50%);'
-    '    width: 32px;'
-    '    height: 64px;'
-    '    background: linear-gradient(135deg, rgba(56, 189, 248, 0.9), rgba(2, 132, 199, 0.9));'
-    '    color: #0f172a;'
-    '    font-size: 24px;'
-    '    font-weight: bold;'
-    '    display: flex;'
-    '    align-items: center;'
-    '    justify-content: center;'
-    '    border-top-right-radius: 8px;'
-    '    border-bottom-right-radius: 8px;'
-    '    box-shadow: 0 0 15px rgba(56, 189, 248, 0.8);'
-    '    z-index: 999998;'
-    '    cursor: pointer;'
-    '    text-decoration: none;'
-    '    transition: all 0.2s ease;'
-    '}'
-    '.neon-arrow-btn:hover {'
-    '    width: 38px;'
-    '    background: linear-gradient(135deg, #38bdf8, #0284c7);'
-    '    box-shadow: 0 0 25px #38bdf8;'
-    '}'
-    
-    # Desktop Hover Trigger Area (Pointing cursor ke area kiri)
-    '.sidebar-trigger-area {'
-    '    position: fixed;'
-    '    top: 0;'
-    '    left: 0;'
-    '    width: 20px;'
-    '    height: 100vh;'
-    '    z-index: 999997;'
-    '    pointer-events: auto;'
-    '}'
-    '.sidebar-trigger-area:hover ~ [data-testid="stSidebar"], [data-testid="stSidebar"]:hover {'
-    '    left: 0 !important;'
-    '}'
-    
-    # Metal Slug Runner Animation Banner
     '.metal-slug-banner { position: fixed; top: 0; left: 0; width: 100%; height: 50px; overflow: hidden; pointer-events: none; z-index: 999990; }'
     '@keyframes patrolShoot { 0% { left: -60px; transform: scaleX(1); } 47% { left: calc(100% - 210px); transform: scaleX(1); } 50% { left: calc(100% - 210px); transform: scaleX(-1); } 97% { left: -60px; transform: scaleX(-1); } 100% { left: -60px; transform: scaleX(1); } }'
     '@keyframes runBounce { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-3px); } }'
@@ -176,8 +112,6 @@ custom_ui = (
     '    background-color: rgba(56, 189, 248, 0.25) !important;'
     '}'
     '</style>'
-    '<div class="sidebar-trigger-area"></div>'
-    + ('<a href="?toggle_sidebar=0" class="neon-arrow-btn" title="Tutup Menu">❮</a>' if st.session_state.sidebar_open else '<a href="?toggle_sidebar=1" class="neon-arrow-btn" title="Buka Menu & Filter">❯</a>') +
     '<div class="metal-slug-banner"><div class="metal-slug-runner"><div class="sprite-body">'
     '<svg viewBox="0 0 16 16" width="40" height="40" shape-rendering="crispEdges">'
     '<rect x="4" y="1" width="6" height="2" fill="#8B4513"/><rect x="4" y="3" width="7" height="1" fill="#FF0000"/><rect x="2" y="3" width="2" height="2" fill="#FF0000"/>'
@@ -189,13 +123,6 @@ custom_ui = (
     '</svg></div><div class="bullet-1"></div><div class="bullet-2"></div></div></div>'
 )
 st.markdown(custom_ui, unsafe_allow_html=True)
-
-# Menangkap parameter URL query untuk membuka/menutup sidebar via klik panah neon
-query_params = st.query_params
-if "toggle_sidebar" in query_params:
-    val = query_params["toggle_sidebar"]
-    st.session_state.sidebar_open = (val == "1")
-    st.rerun()
 
 st.title("🎮 Nortisce Gaming News Database")
 st.markdown("Database berita game terkini dari **20 kanal global + 8 kanal lokal terbaik** lengkap dengan thumbnail, filter, dan analisis AI Gemini.")
@@ -239,6 +166,7 @@ def bersihkan_html(teks):
     return re.sub(r'\s+', ' ', teks_bersih).strip()[:600]
 
 def ambil_thumbnail(entry):
+    # Daftar gambar cadangan (fallback) bertema gaming beresolusi tinggi yang dijamin aktif & clean
     fallback_game_images = [
         "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=600&auto=format&fit=crop",
@@ -264,6 +192,7 @@ def ambil_thumbnail(entry):
         if match:
             candi_url = match.group(1)
 
+    # Validasi URL: Jika domain Pure Xbox / IGN / Cloudflare yang sering blokir hotlinking, langsung ganti dengan fallback
     if not candi_url or any(bad in candi_url.lower() for bad in ['purexbox.com', 'nintendolife.com', 'pushsquare.com', 'kickstarter', 'ads']):
         return random.choice(fallback_game_images)
         
@@ -300,6 +229,7 @@ def muat_data_berita():
         except Exception:
             pass
     
+    # Algoritma Hype & Engagement Scoring
     kata_penting = []
     for item in semua_berita:
         kata2 = [w.lower() for w in re.findall(r'\b[A-Za-z]{4,}\b', item["judul"]) if w.lower() not in ['with', 'from', 'this', 'that', 'have', 'will', 'your']]
@@ -553,6 +483,7 @@ for idx, b in enumerate(berita_paginasi):
         col_img, col_txt = st.columns([1, 4])
         
         with col_img:
+            # Render menggunakan st.image bawaan Streamlit yang aman dari blokir iframe/sandbox
             st.image(b['thumbnail'], use_column_width=True)
             
         with col_txt:
