@@ -78,7 +78,7 @@ st.title("🎮 Nortisce Global & Local Gaming News Bulldozer")
 st.markdown("Menyerok berita dari **20 kanal global + 10 kanal lokal terbaik** dengan filter, pencarian, dan analisis AI Gemini cepat.")
 
 RSS_SOURCES = {
-    # 20 Kanal Global
+    # --- 20 Kanal Global ---
     "IGN": "https://feeds.feedburner.com/ign/games-all",
     "GameSpot": "https://www.gamespot.com/feeds/news/",
     "Gematsu": "https://www.gematsu.com/feed",
@@ -99,18 +99,18 @@ RSS_SOURCES = {
     "DualShockers": "https://www.dualshockers.com/feed/",
     "Wccftech": "https://wccftech.com/feed",
     "Rock Paper Shotgun": "https://www.rockpapershotgun.com/feed",
-    
-    # 10 Kanal Lokal Indonesia
-    "Duniaku": "https://duniaku.idnes.co.id/feed",
-    "Kincir": "https://kincir.com/game/feed",
-    "KotakGame": "https://kotakgame.com/rss/news.xml",
-    "IDN Times": "https://www.idntimes.com/tech/games/rss",
-    "Indogamers": "https://www.indogamers.com/feed",
-    "GGWP.ID": "https://ggwp.id/feed",
-    "Hybrid": "https://hybrid.co.id/feed",
-    "Merdeka": "https://www.merdeka.com/teknologi/feed",
-    "Jagat Play": "https://jagatplay.com/feed",
-    "RevivalTV": "https://revivaltv.id/feed"
+
+    # --- 10 Kanal Lokal Indonesia (Via Google News RSS Gaming Indo) ---
+    "IDN Times Game": "https://news.google.com/rss/search?q=site:idntimes.com+game&hl=id&gl=ID&ceid=ID:id",
+    "GGWP ID": "https://news.google.com/rss/search?q=site:ggwp.id+game&hl=id&gl=ID&ceid=ID:id",
+    "Hybrid Indonesia": "https://news.google.com/rss/search?q=site:hybrid.co.id+game&hl=id&gl=ID&ceid=ID:id",
+    "Jagat Play": "https://news.google.com/rss/search?q=site:jagatplay.com+game&hl=id&gl=ID&ceid=ID:id",
+    "KotakGame": "https://news.google.com/rss/search?q=site:kotakgame.com+game&hl=id&gl=ID&ceid=ID:id",
+    "Kincir Game": "https://news.google.com/rss/search?q=site:kincir.com+game&hl=id&gl=ID&ceid=ID:id",
+    "Indogamers": "https://news.google.com/rss/search?q=site:indogamers.com+game&hl=id&gl=ID&ceid=ID:id",
+    "RevivalTV": "https://news.google.com/rss/search?q=site:revivaltv.id+game&hl=id&gl=ID&ceid=ID:id",
+    "Merdeka Tekno": "https://news.google.com/rss/search?q=site:merdeka.com+game&hl=id&gl=ID&ceid=ID:id",
+    "Suara Tekno": "https://news.google.com/rss/search?q=site:suara.com+game&hl=id&gl=ID&ceid=ID:id"
 }
 
 def bersihkan_html(teks):
