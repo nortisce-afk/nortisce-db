@@ -42,7 +42,7 @@ if sidebar_bg_base64:
 else:
     sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.95) !important; }'
 
-# --- CLEAN GAMING UI CSS (TRANSPARAN PENUH UNTUK SEMUA DROPDOWN & INPUT) ---
+# --- CLEAN GAMING UI CSS (TRANSPARAN PENUH & ELEGAN) ---
 custom_ui = (
     '<style>'
     '.stApp { background-image: linear-gradient(rgba(8, 12, 20, 0.85), rgba(8, 12, 20, 0.92)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
@@ -65,7 +65,7 @@ custom_ui = (
     # Kartu Berita Clean
     'div.stContainer { background-color: rgba(15, 23, 42, 0.45); backdrop-filter: blur(8px); padding: 15px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.25); margin-bottom: 12px; }'
     
-    # Membuat SEMUA tombol transparan
+    # Tombol Transparan
     'div.stButton > button, button[kind="secondary"] {'
     '    background-color: transparent !important;'
     '    border: 1px solid rgba(56, 189, 248, 0.45) !important;'
@@ -77,7 +77,7 @@ custom_ui = (
     '    border-color: #38bdf8 !important;'
     '}'
     
-    # Menghapus warna abu-abu di seluruh lapisan Dropdown (Selectbox) & Input Teks
+    # Dropdown & Input Transparan Penuh
     'div[data-baseweb="select"],'
     'div[data-baseweb="select"] > div,'
     'div[data-baseweb="select"] > div > div,'
@@ -90,8 +90,6 @@ custom_ui = (
     '    background: transparent !important;'
     '    color: #f8fafc !important;'
     '}'
-    
-    # Bingkai (Border) luar untuk Dropdown & Input Teks
     'div[data-baseweb="select"] > div,'
     'div[data-baseweb="base-input"] {'
     '    border: 1px solid rgba(56, 189, 248, 0.45) !important;'
@@ -105,8 +103,6 @@ custom_ui = (
     '    background-color: transparent !important;'
     '    color: #f8fafc !important;'
     '}'
-    
-    # Menu list saat dropdown diklik dibuka
     'ul[role="listbox"], div[data-baseweb="popover"] > div, li[role="option"] {'
     '    background-color: rgba(10, 15, 28, 0.92) !important;'
     '    backdrop-filter: blur(12px) !important;'
@@ -207,12 +203,53 @@ def muat_data_berita():
                             "judul": entry.title, "link": entry.link, "sumber": nama_web,
                             "tanggal": pub_dt.strftime("%d %b %Y, %H:%M"),
                             "rentang_waktu": label_waktu, "selisih_hari": selisih_hari,
-                            "deskripsi": clean_desc, "thumbnail": thumb_url
+                            "selisih_jam": selisih_jam, "deskripsi": clean_desc, "thumbnail": thumb_url,
+                            "datetime_obj": pub_dt
                         }
                         if info not in semua_berita:
                             semua_berita.append(info)
         except Exception:
             pass
+    
+    # --- METODE 1 & 2: SMART HYPE & ENGAGEMENT SCORING ---
+    # Hitung frekuensi kemunculan kata kunci utama di seluruh judul (Cross-Source Trending)
+    kata_penting = []
+    for item in semua_berita:
+        # Ambil kata-kata yang lebih dari 4 huruf sebagai kata kunci topik
+        kata2 = [w.lower() for w in re.findall(r'\b[A-Za-z]{4,}\b', item["judul"]) if w.lower() not in ['with', 'from', 'this', 'that', 'have', 'will', 'your']]
+        kata_penting.extend(kata2)
+    
+    from collections import Counter
+    frekuensi_topik = Counter(kata_penting)
+
+    # Kata kunci pemicu engagement tinggi (High-Hype Trigger Words)
+    hype_keywords = ['gta', 'grand theft auto', 'release', 'trailer', 'leak', 'rumor', 'ps5', 'switch 2', 'remake', 'update', 'dlc', 'free', 'xbox', 'nintendo']
+
+    for item in semua_berita:
+        skor_hype = 0
+        judul_lc = item["judul"].lower()
+        
+        # 1. Tambah skor jika judul mengandung kata hype tinggi
+        for hk in hype_keywords:
+            if hk in judul_lc:
+                skor_hype += 15
+        
+        # 2. Tambah skor Cross-Source Trending (jika topiknya banyak dibahas media lain)
+        for kata in set(re.findall(r'\b[A-Za-z]{4,}\b', item["judul"])):
+            if frekuensi_topik[kata.lower()] > 1:
+                skor_hype += (frekuensi_topik[kata.lower()] * 5)
+                
+        # 3. Faktor Kebaruan Waktu (Freshness): Makin baru (dalam jam), makin tinggi poinnya
+        jam_lalu = item["selisih_jam"]
+        if jam_lalu <= 24:
+            skor_hype += max(0, int(50 - (jam_lalu * 1.5))) # Berita dalam 24 jam terakhir dapat bonus besar
+        elif jam_lalu <= 72:
+            skor_hype += 15
+            
+        item["skor_engagement"] = skor_hype
+
+    # Urutkan berita dari skor engagement tertinggi ke terendah secara default
+    semua_berita.sort(key=lambda x: x["skor_engagement"], reverse=True)
     return semua_berita
 
 @st.cache_data(show_spinner=False)
@@ -279,7 +316,7 @@ if st.sidebar.button("🔄 Refresh Cache Berita", use_container_width=True):
     st.cache_data.clear()
     st.rerun()
 
-with st.spinner("⏳ Menyerok berita & thumbnail dari 28 server..."):
+with st.spinner("⏳ Menyerok berita, menganalisis hype & thumbnail dari 28 server..."):
     semua_berita = muat_data_berita()
 
 st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir! (28 Kanal Media)")
@@ -390,7 +427,7 @@ target_tampil = kategori.items() if pilih_kategori == "Semua Kategori" else [(pi
 
 st.markdown("---")
 total_ditampilkan = sum(len(daftar) for _, daftar in target_tampil)
-st.info(f"Menampilkan total **{total_ditampilkan} berita** tersaring | Kategori: **{pilih_kategori}** | Sumber: **{pilih_web}**")
+st.info(f"Menampilkan total **{total_ditampilkan} berita** tersaring (Diurutkan berdasarkan Engagement & Hype Tertinggi) | Kategori: **{pilih_kategori}** | Sumber: **{pilih_web}**")
 
 # --- SISTEM PAGINASI TERSINKRONISASI SEMPURNA (ATAS & BAWAH) ---
 semua_berita_flat = []
