@@ -209,15 +209,6 @@ if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
     st.cache_data.clear()
     st.rerun()
 
-# --- SIDEBAR: QUICK LINK UPCOMING GAMES RELEASE ---
-st.sidebar.markdown("---")
-st.sidebar.subheader("📅 Portal Jadwal")
-st.sidebar.markdown(
-    "[🎮 Upcoming Games Release](https://www.ign.com/upcoming/games)", 
-    unsafe_allow_html=True
-)
-st.sidebar.caption("Akses langsung database jadwal rilis game global terbaru di IGN.")
-
 with st.spinner("⏳ Menyerok berita dari 28 server (Global & Lokal)..."):
     semua_berita = muat_data_berita()
 
@@ -233,6 +224,10 @@ pilih_kategori = st.sidebar.selectbox(
 
 pilih_web = st.sidebar.selectbox("🌐 Pilih Sumber Website:", ["Semua Website (28 Media)"] + list(RSS_SOURCES.keys()))
 pilih_waktu = st.sidebar.selectbox("⏰ Pilih Rentang Waktu:", ["Semua Rentang Waktu (7 Hari Terakhir)", "Today (Hari Ini)", "1 Day Ago (Kemarin)", "2 Days Ago", "3 Days Ago", "4-7 Days Ago"])
+
+# --- SIDEBAR: QUICK LINK UPCOMING GAMES RELEASE (DI BAWAH RENTANG WAKTU) ---
+st.sidebar.markdown("---")
+st.sidebar.markdown("[🎮 Upcoming Games Release](https://www.ign.com/upcoming/games)", unsafe_allow_html=True)
 
 # --- MINI-GAME TIC-TAC-TOE ---
 st.sidebar.markdown("---")
