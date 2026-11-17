@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import google.generativeai as genai
 
 st.set_page_config(
-    page_title="Nortisce Gaming News Bulldozer",
+    page_title="Nortisce News Database",
     page_icon="🎮",
     layout="wide"
 )
@@ -48,6 +48,15 @@ custom_ui = (
     '.stApp { background-image: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
     + sidebar_css +
     'header[data-testid="stHeader"] { background-color: transparent !important; }'
+    '/* Membuat background tombol, input, dan selectbox di sidebar menjadi transparan/transluen */'
+    '[data-testid="stSidebar"] div[data-baseweb="select"] > div, '
+    '[data-testid="stSidebar"] input, '
+    '[data-testid="stSidebar"] .stButton > button { '
+    '    background-color: rgba(20, 25, 45, 0.4) !important; '
+    '    border: 1px solid rgba(255, 120, 0, 0.4) !important; '
+    '    color: #ffffff !important; '
+    '}'
+    '[data-testid="stSidebar"] div[data-baseweb="select"] span { color: #ffffff !important; }'
     '.metal-slug-banner { position: fixed; top: 0; left: 0; width: 100%; height: 60px; overflow: hidden; pointer-events: none; z-index: 999990; }'
     '@keyframes patrolShoot { 0% { left: -60px; transform: scaleX(1); } 47% { left: calc(100% - 210px); transform: scaleX(1); } 50% { left: calc(100% - 210px); transform: scaleX(-1); } 97% { left: -60px; transform: scaleX(-1); } 100% { left: -60px; transform: scaleX(1); } }'
     '@keyframes runBounce { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-3px); } }'
@@ -75,7 +84,7 @@ custom_ui = (
 )
 st.markdown(custom_ui, unsafe_allow_html=True)
 
-st.title("🎮 Nortisce Global Gaming News Bulldozer")
+st.title("🎮 Nortisce News Database")
 st.markdown("Menyerok berita dari **20 kanal global pilihan** dengan filter, pencarian, dan analisis AI Gemini cepat.")
 
 RSS_SOURCES = {
@@ -352,4 +361,4 @@ for kat, daftar in target_tampil:
                                     hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "sentimen", b['judul'], b['sumber'], b['deskripsi'])
                                     st.info(hasil)
                                 except Exception as e:
-                                    st.error2(f"Detail kendala: {e}")
+                                    st.error(f"Detail kendala: {e}")
