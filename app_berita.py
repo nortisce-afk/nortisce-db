@@ -2,6 +2,7 @@ import base64
 from datetime import datetime, timedelta, timezone
 from time import mktime
 import feedparser
+import glob
 import google.generativeai as genai
 import random
 import re
