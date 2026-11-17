@@ -3,6 +3,7 @@ import feedparser
 import base64
 import glob
 import re
+import random
 from datetime import datetime, timedelta, timezone
 from time import mktime
 import google.generativeai as genai
@@ -162,6 +163,41 @@ def analisis_gemini_multi_key(keys_tuple, mode, judul, sumber, deskripsi):
 
     raise Exception(" | ".join(catatan_error) if catatan_error else "Daftar API Key kosong")
 
+# --- LOGIKA GAME TIC-TAC-TOE ---
+def cek_pemenang_ttt(papan):
+    pola_menang = [
+        (0, 1, 2), (3, 4, 5), (6, 7, 8), # Baris
+        (0, 3, 6), (1, 4, 7), (2, 5, 8), # Kolom
+        (0, 4, 8), (2, 4, 6)             # Diagonal
+    ]
+    for a, b, c in pola_menang:
+        if papan[a] != "" and papan[a] == papan[b] == papan[c]:
+            return papan[a]
+    if "" not in papan:
+        return "Seri"
+    return None
+
+def langkah_bot_ttt(papan):
+    kosong = [i for i, v in enumerate(papan) if v == ""]
+    if not kosong:
+        return None
+    # 1. Cek apakah Bot (O) bisa langsung menang
+    for i in kosong:
+        salinan = papan.copy()
+        salinan[i] = "O"
+        if cek_pemenang_ttt(salinan) == "O":
+            return i
+    # 2. Blokir jika Pemain (X) hampir menang
+    for i in kosong:
+        salinan = papan.copy()
+        salinan[i] = "X"
+        if cek_pemenang_ttt(salinan) == "X":
+            return i
+    # 3. Ambil tengah jika kosong, atau pilih acak
+    if 4 in kosong:
+        return 4
+    return random.choice(kosong)
+
 if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
     st.cache_data.clear()
     st.rerun()
@@ -182,6 +218,56 @@ pilih_kategori = st.sidebar.selectbox(
 pilih_web = st.sidebar.selectbox("🌐 Pilih Sumber Website:", ["Semua Website (20 Media)"] + list(RSS_SOURCES.keys()))
 pilih_waktu = st.sidebar.selectbox("⏰ Pilih Rentang Waktu:", ["Semua Rentang Waktu (7 Hari Terakhir)", "Today (Hari Ini)", "1 Day Ago (Kemarin)", "2 Days Ago", "3 Days Ago", "4-7 Days Ago"])
 
+# --- WIDGET MINI-GAME TIC-TAC-TOE TEPAT DI BAWAH DROPDOWN RENTANG WAKTU ---
+st.sidebar.markdown("---")
+st.sidebar.subheader("🕹️ Mini-Game: Tic-Tac-Toe")
+st.sidebar.caption("Kamu (**❌**) vs Bot (**⭕**)")
+
+if "ttt_board" not in st.session_state:
+    st.session_state.ttt_board = [""] * 9
+if "ttt_winner" not in st.session_state:
+    st.session_state.ttt_winner = None
+
+def klik_kotak_ttt(idx):
+    if st.session_state.ttt_board[idx] == "" and st.session_state.ttt_winner is None:
+        st.session_state.ttt_board[idx] = "X"
+        hasil = cek_pemenang_ttt(st.session_state.ttt_board)
+        if hasil:
+            st.session_state.ttt_winner = hasil
+        else:
+            bot_idx = langkah_bot_ttt(st.session_state.ttt_board)
+            if bot_idx is not None:
+                st.session_state.ttt_board[bot_idx] = "O"
+                st.session_state.ttt_winner = cek_pemenang_ttt(st.session_state.ttt_board)
+
+for row in range(3):
+    cols = st.sidebar.columns(3)
+    for col in range(3):
+        idx = row * 3 + col
+        val = st.session_state.ttt_board[idx]
+        label = "❌" if val == "X" else ("⭕" if val == "O" else " ")
+        cols[col].button(
+            label,
+            key=f"ttt_cell_{idx}",
+            on_click=klik_kotak_ttt,
+            args=(idx,),
+            use_container_width=True,
+            disabled=(val != "" or st.session_state.ttt_winner is not None)
+        )
+
+if st.session_state.ttt_winner == "X":
+    st.sidebar.success("🎉 Mantap! Kamu Menang!")
+elif st.session_state.ttt_winner == "O":
+    st.sidebar.error("🤖 Bot Menang! Coba lagi!")
+elif st.session_state.ttt_winner == "Seri":
+    st.sidebar.warning("🤝 Hasil Seri!")
+
+if st.sidebar.button("🔁 Main Ulang Tic-Tac-Toe", use_container_width=True):
+    st.session_state.ttt_board = [""] * 9
+    st.session_state.ttt_winner = None
+    st.rerun()
+
+# --- FILTER & TAMPILAN BERITA ---
 kategori = {k: [] for k in ["🎮 Game Releases & Updates", "🛠️ Tech, Hardware & Performance", "🏢 Industry & Business", "🏆 Esports & Competitive", "🍿 Pop Culture, Media & Leaks", "📌 Lainnya"]}
 keywords = {
     "🎮 Game Releases & Updates": ["release", "launch", "update", "patch", "dlc", "expansion", "out now", "beta", "season", "gameplay", "review"],
