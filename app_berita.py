@@ -388,7 +388,7 @@ if st.sidebar.button("🔁 Main Ulang Tic-Tac-Toe", use_container_width=True):
   st.session_state.ttt_winner = None
   st.rerun()
 
-# --- FILTER & TAMPILAN BERITA ---
+# --- FILTER & KATEGORISASI BERITA ---
 kategori = {
     k: []
     for k in [
@@ -519,57 +519,96 @@ st.info(
     f" **{pilih_kategori}** | Sumber: **{pilih_web}**"
 )
 
+# --- GABUNGKAN SEMUA BERITA TERFILTER DALAM SATU LIST UNTUK PAGINASI ---
+semua_berita_flat = []
 for kat, daftar in target_tampil:
-  if daftar:
-    st.markdown(f"### {kat} ({len(daftar)} Berita)")
-    for idx, b in enumerate(daftar):
-      with st.container():
-        col1, col2 = st.columns([4, 1])
-        with col1:
-          st.markdown(f"**{b['judul']}**")
-          st.caption(
-              f"🌐 **{b['sumber']}** | 📅 {b['tanggal']}"
-              f" ({b['rentang_waktu']})"
-          )
-        with col2:
-          st.markdown(f"[🔗 Buka Berita]({b['link']})")
+  for b in daftar:
+    b["kategori_asal"] = kat
+    semua_berita_flat.append(b)
 
-        expander_key = f"exp_{kat}_{idx}_{b['judul'][:15]}"
-        with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
-          col_btn1, col_btn2 = st.columns(2)
+# Konfigurasi Paginasi Maksimal 20 Berita per Halaman
+items_per_page = 20
+total_pages = max(
+    1, (len(semua_berita_flat) + items_per_page - 1) // items_per_page
+)
 
-          if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
-            if not daftar_api_keys:
-              st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
-            else:
-              with st.spinner("Menganalisis..."):
-                try:
-                  hasil = analisis_gemini_multi_key(
-                      tuple(daftar_api_keys),
-                      "ringkas",
-                      b["judul"],
-                      b["sumber"],
-                      b["deskripsi"],
-                  )
-                  st.success(hasil)
-                except Exception as e:
-                  st.error(f"Detail kendala: {e}")
+if "halaman_aktif" not in st.session_state:
+  st.session_state.halaman_aktif = 1
+if st.session_state.halaman_aktif > total_pages:
+  st.session_state.halaman_aktif = 1
 
-          if col_btn2.button(
-              "📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"
-          ):
-            if not daftar_api_keys:
-              st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
-            else:
-              with st.spinner("Memindai sentimen..."):
-                try:
-                  hasil = analisis_gemini_multi_key(
-                      tuple(daftar_api_keys),
-                      "sentimen",
-                      b["judul"],
-                      b["sumber"],
-                      b["deskripsi"],
-                  )
-                  st.info(hasil)
-                except Exception as e:
-                  st.error(f"Detail kendala: {e}")
+# Dropdown Pemilihan Halaman (Scroll Down Fitur Format Page X dari Y)
+halaman_pilihan = st.selectbox(
+    f"📄 Pilih Halaman (Total {total_pages} Page Tersedia):",
+    range(1, total_pages + 1),
+    format_func=lambda x: (
+        f"Page {x} dari {total_pages} (Menampilkan 20 Berita)"
+    ),
+    index=st.session_state.halaman_aktif - 1,
+)
+
+st.session_state.halaman_aktif = halaman_pilihan
+current_page = st.session_state.halaman_aktif
+
+start_idx = (current_page - 1) * items_per_page
+end_idx = start_idx + items_per_page
+berita_paginasi = semua_berita_flat[start_idx:end_idx]
+
+st.markdown(
+    f"### 📑 Menampilkan Berita Halaman {current_page} dari {total_pages}"
+    f" ({len(berita_paginasi)} Berita di Halaman Ini)"
+)
+
+for idx, b in enumerate(berita_paginasi):
+  with st.container():
+    col1, col2 = st.columns([4, 1])
+    with col1:
+      st.markdown(f"**{b['judul']}**")
+      st.caption(
+          f"📂 *{b['kategori_asal']}* | 🌐 **{b['sumber']}** | 📅"
+          f" {b['tanggal']} ({b['rentang_waktu']})"
+      )
+    with col2:
+      st.markdown(f"[🔗 Buka Berita]({b['link']})")
+
+    expander_key = (
+        f"exp_p{current_page}_{idx}_{re.sub(r'[^a-zA-Z0-9]', '', b['judul'][:10])}"
+    )
+    with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
+      col_btn1, col_btn2 = st.columns(2)
+
+      if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
+        if not daftar_api_keys:
+          st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
+        else:
+          with st.spinner("Menganalisis..."):
+            try:
+              hasil = analisis_gemini_multi_key(
+                  tuple(daftar_api_keys),
+                  "ringkas",
+                  b["judul"],
+                  b["sumber"],
+                  b["deskripsi"],
+              )
+              st.success(hasil)
+            except Exception as e:
+              st.error(f"Detail kendala: {e}")
+
+      if col_btn2.button(
+          "📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"
+      ):
+        if not daftar_api_keys:
+          st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
+        else:
+          with st.spinner("Memindai sentimen..."):
+            try:
+              hasil = analisis_gemini_multi_key(
+                  tuple(daftar_api_keys),
+                  "sentimen",
+                  b["judul"],
+                  b["sumber"],
+                  b["deskripsi"],
+              )
+              st.info(hasil)
+            except Exception as e:
+              st.error(f"Detail kendala: {e}")
