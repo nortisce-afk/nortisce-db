@@ -13,10 +13,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# Konfigurasi API Key otomatis dari Streamlit Secrets
-api_key_input = st.secrets["GEMINI_API_KEY"] if "GEMINI_API_KEY" in st.secrets else ""
-if api_key_input:
-    genai.configure(api_key=api_key_input)
+# Mengambil daftar banyak API Key dari Streamlit Secrets (untuk rotasi kuota otomatis)
+daftar_api_keys = []
+if "GEMINI_API_KEYS" in st.secrets:
+    daftar_api_keys = list(st.secrets["GEMINI_API_KEYS"])
+elif "GEMINI_API_KEY" in st.secrets:
+    daftar_api_keys = [st.secrets["GEMINI_API_KEY"]]
 
 def get_chunli_bg():
     for ext in ["*.jpg", "*.jpeg", "*.png", "*.webp"]:
@@ -131,11 +133,9 @@ def muat_data_berita():
             pass
     return semua_berita
 
-# Fungsi AI dengan Cache agar hasil yang sudah diringkas tidak memakan kuota lagi
+# Fungsi AI dengan Rotasi Banyak API Key Otomatis & Cache
 @st.cache_data(show_spinner=False)
-def analisis_gemini_cepat(api_key, mode, judul, sumber, deskripsi):
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-3.8-flash')
+def analisis_gemini_multi_key(keys_tuple, mode, judul, sumber, deskripsi):
     if mode == "ringkas":
         prompt = (
             f"Sebagai analis industri game, bedah esensi berita dari {sumber} berikut secara tajam, unik, dan mendalam dalam 3 kalimat bahasa Indonesia (tanpa basa-basi pembuka):\n"
@@ -146,8 +146,21 @@ def analisis_gemini_cepat(api_key, mode, judul, sumber, deskripsi):
             f"As a gaming community observer, determine public sentiment (Positive / Negative / Neutral) and its sharp reasoning in 2-3 sentences of Indonesian for this news:\n"
             f"Title: {judul}\nContext: {deskripsi}"
         )
-    response = model.generate_content(prompt)
-    return response.text
+
+    error_terakhir = None
+    for key in keys_tuple:
+        if not key or not key.strip():
+            continue
+        try:
+            genai.configure(api_key=key.strip())
+            model = genai.GenerativeModel('gemini-3.8-flash')
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            error_terakhir = e
+            continue
+
+    raise error_terakhir
 
 if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
     st.cache_data.clear()
@@ -229,23 +242,23 @@ for kat, daftar in target_tampil:
                     col_btn1, col_btn2 = st.columns(2)
                     
                     if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
-                        if not api_key_input:
+                        if not daftar_api_keys:
                             st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
                         else:
                             with st.spinner("Menganalisis..."):
                                 try:
-                                    hasil = analisis_gemini_cepat(api_key_input, "ringkas", b['judul'], b['sumber'], b['deskripsi'])
+                                    hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "ringkas", b['judul'], b['sumber'], b['deskripsi'])
                                     st.success(hasil)
                                 except Exception:
-                                    st.warning("⏳ Kuota harian AI sedang penuh (limit 20x/hari pada Free Tier). Silakan coba lagi besok atau ganti API Key baru di Secrets.")
+                                    st.warning("⏳ Semua kuota API Key hari ini sedang penuh. Silakan coba lagi besok!")
                             
                     if col_btn2.button("📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"):
-                        if not api_key_input:
+                        if not daftar_api_keys:
                             st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
                         else:
                             with st.spinner("Memindai sentimen..."):
                                 try:
-                                    hasil = analisis_gemini_cepat(api_key_input, "sentimen", b['judul'], b['sumber'], b['deskripsi'])
+                                    hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "sentimen", b['judul'], b['sumber'], b['deskripsi'])
                                     st.info(hasil)
                                 except Exception:
-                                    st.warning("⏳ Kuota harian AI sedang penuh (limit 20x/hari pada Free Tier). Silakan coba lagi besok atau ganti API Key baru di Secrets.")
+                                    st.warning("⏳ Semua kuota API Key hari ini sedang penuh. Silakan coba lagi besok!")
