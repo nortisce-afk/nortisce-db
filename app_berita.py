@@ -74,10 +74,11 @@ custom_ui = (
 )
 st.markdown(custom_ui, unsafe_allow_html=True)
 
-st.title("🎮 Nortisce Global Gaming News Bulldozer")
-st.markdown("Menyerok berita dari **20 kanal game global terbaik** dengan filter, pencarian, dan analisis AI Gemini cepat.")
+st.title("🎮 Nortisce Global & Local Gaming News Bulldozer")
+st.markdown("Menyerok berita dari **20 kanal global + 10 kanal lokal terbaik** dengan filter, pencarian, dan analisis AI Gemini cepat.")
 
 RSS_SOURCES = {
+    # 20 Kanal Global
     "IGN": "https://feeds.feedburner.com/ign/games-all",
     "GameSpot": "https://www.gamespot.com/feeds/news/",
     "Gematsu": "https://www.gematsu.com/feed",
@@ -97,7 +98,19 @@ RSS_SOURCES = {
     "ResetEra": "https://www.resetera.com/index.rss",
     "DualShockers": "https://www.dualshockers.com/feed/",
     "Wccftech": "https://wccftech.com/feed",
-    "Rock Paper Shotgun": "https://www.rockpapershotgun.com/feed"
+    "Rock Paper Shotgun": "https://www.rockpapershotgun.com/feed",
+    
+    # 10 Kanal Lokal Indonesia
+    "Duniaku": "https://duniaku.idnes.co.id/feed",
+    "Kincir": "https://kincir.com/game/feed",
+    "KotakGame": "https://kotakgame.com/rss/news.xml",
+    "IDN Times": "https://www.idntimes.com/tech/games/rss",
+    "Indogamers": "https://www.indogamers.com/feed",
+    "GGWP.ID": "https://ggwp.id/feed",
+    "Hybrid": "https://hybrid.co.id/feed",
+    "Merdeka": "https://www.merdeka.com/teknologi/feed",
+    "Jagat Play": "https://jagatplay.com/feed",
+    "RevivalTV": "https://revivaltv.id/feed"
 }
 
 def bersihkan_html(teks):
@@ -162,7 +175,7 @@ def analisis_gemini_multi_key(keys_tuple, mode, judul, sumber, deskripsi):
 
     raise Exception(" | ".join(catatan_error) if catatan_error else "Daftar API Key kosong")
 
-# --- LOGIKA MINI-GAME 1: TIC-TAC-TOE ---
+# --- LOGIKA GAME TIC-TAC-TOE ---
 def cek_pemenang_ttt(papan):
     pola_menang = [
         (0, 1, 2), (3, 4, 5), (6, 7, 8),
@@ -198,10 +211,10 @@ if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
     st.cache_data.clear()
     st.rerun()
 
-with st.spinner("⏳ Menyerok berita dari 20 server global..."):
+with st.spinner("⏳ Menyerok berita dari 30 server (Global & Lokal)..."):
     semua_berita = muat_data_berita()
 
-st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir! (Terdeteksi {len(daftar_api_keys)} API Key)")
+st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir! (30 Kanal Media)")
 
 st.sidebar.header("🎛️ Panel Filter Konten")
 search_keyword = st.sidebar.text_input("🔍 Cari Judul / Topik Game:", "").lower()
@@ -211,245 +224,57 @@ pilih_kategori = st.sidebar.selectbox(
     ["Semua Kategori", "🎮 Game Releases & Updates", "🛠️ Tech, Hardware & Performance", "🏢 Industry & Business", "🏆 Esports & Competitive", "🍿 Pop Culture, Media & Leaks", "📌 Lainnya"]
 )
 
-pilih_web = st.sidebar.selectbox("🌐 Pilih Sumber Website:", ["Semua Website (20 Media)"] + list(RSS_SOURCES.keys()))
+pilih_web = st.sidebar.selectbox("🌐 Pilih Sumber Website:", ["Semua Website (30 Media)"] + list(RSS_SOURCES.keys()))
 pilih_waktu = st.sidebar.selectbox("⏰ Pilih Rentang Waktu:", ["Semua Rentang Waktu (7 Hari Terakhir)", "Today (Hari Ini)", "1 Day Ago (Kemarin)", "2 Days Ago", "3 Days Ago", "4-7 Days Ago"])
 
-# --- ARCADE MINI-GAMES (SELECTBOX TEPAT DI BAWAH DROPDOWN RENTANG WAKTU) ---
+# --- MINI-GAME TIC-TAC-TOE ---
 st.sidebar.markdown("---")
-pilih_game = st.sidebar.selectbox(
-    "🕹️ Pilih Mini-Game Arcade:",
-    [
-        "❌⭕ Tic-Tac-Toe",
-        "🔤 Tebak Kata Game",
-        "🎁 Gacha Loot Box",
-        "✊✌️✋ Suit Jepang",
-        "💣 Minesweeper Mini (4x4)",
-        "🧠 Kuis Trivia Gaming"
-    ]
-)
+st.sidebar.subheader("🕹️ Mini-Game: Tic-Tac-Toe")
+st.sidebar.caption("Kamu (**❌**) vs Bot (**⭕**)")
 
-# 1. GAME TIC-TAC-TOE
-if pilih_game == "❌⭕ Tic-Tac-Toe":
-    st.sidebar.caption("Kamu (**❌**) vs Bot (**⭕**)")
-    if "ttt_board" not in st.session_state:
-        st.session_state.ttt_board = [""] * 9
-    if "ttt_winner" not in st.session_state:
-        st.session_state.ttt_winner = None
+if "ttt_board" not in st.session_state:
+    st.session_state.ttt_board = [""] * 9
+if "ttt_winner" not in st.session_state:
+    st.session_state.ttt_winner = None
 
-    def klik_kotak_ttt(idx):
-        if st.session_state.ttt_board[idx] == "" and st.session_state.ttt_winner is None:
-            st.session_state.ttt_board[idx] = "X"
-            hasil = cek_pemenang_ttt(st.session_state.ttt_board)
-            if hasil:
-                st.session_state.ttt_winner = hasil
-            else:
-                bot_idx = langkah_bot_ttt(st.session_state.ttt_board)
-                if bot_idx is not None:
-                    st.session_state.ttt_board[bot_idx] = "O"
-                    st.session_state.ttt_winner = cek_pemenang_ttt(st.session_state.ttt_board)
-
-    for row in range(3):
-        cols = st.sidebar.columns(3)
-        for col in range(3):
-            idx = row * 3 + col
-            val = st.session_state.ttt_board[idx]
-            label = "❌" if val == "X" else ("⭕" if val == "O" else " ")
-            cols[col].button(
-                label,
-                key=f"ttt_cell_{idx}",
-                on_click=klik_kotak_ttt,
-                args=(idx,),
-                use_container_width=True,
-                disabled=(val != "" or st.session_state.ttt_winner is not None)
-            )
-
-    if st.session_state.ttt_winner == "X":
-        st.sidebar.success("🎉 Mantap! Kamu Menang!")
-    elif st.session_state.ttt_winner == "O":
-        st.sidebar.error("🤖 Bot Menang! Coba lagi!")
-    elif st.session_state.ttt_winner == "Seri":
-        st.sidebar.warning("🤝 Hasil Seri!")
-
-    if st.sidebar.button("🔁 Main Ulang Tic-Tac-Toe", use_container_width=True):
-        st.session_state.ttt_board = [""] * 9
-        st.session_state.ttt_winner = None
-        st.rerun()
-
-# 2. GAME TEBAK KATA GAME (HANGMAN)
-elif pilih_game == "🔤 Tebak Kata Game":
-    kata_game_list = [
-        "ZELDA", "ROCKSTAR", "CYBERPUNK", "WITCHER", "SEKIRO", "SKYRIM",
-        "VALORANT", "TEKKEN", "SPLATOON", "WARHAMMER", "PERSONA", "CAPCOM",
-        "NINTENDO", "PLAYSTATION", "ELDENRING", "OVERWATCH", "FALLOUT", "DOOM"
-    ]
-    if "hm_word" not in st.session_state:
-        st.session_state.hm_word = random.choice(kata_game_list)
-        st.session_state.hm_guessed = set()
-        st.session_state.hm_lives = 6
-
-    kata = st.session_state.hm_word
-    tampilan_kata = " ".join([huruf if huruf in st.session_state.hm_guessed else "_" for huruf in kata])
-    st.sidebar.markdown(f"### `{tampilan_kata}`")
-    st.sidebar.caption(f"❤️ Sisa Nyawa: **{st.session_state.hm_lives} / 6**")
-
-    menang_hm = all(h in st.session_state.hm_guessed for h in kata)
-    kalah_hm = st.session_state.hm_lives <= 0
-
-    if menang_hm:
-        st.sidebar.success(f"🎉 Tepat! Katanya **{kata}**!")
-    elif kalah_hm:
-        st.sidebar.error(f"💀 Kalah! Jawabannya **{kata}**.")
-    else:
-        tebakan = st.sidebar.text_input("Ketik 1 huruf (A-Z):", max_chars=1, key="hm_input").upper()
-        if st.sidebar.button("Tebak Huruf", use_container_width=True):
-            if tebakan and tebakan.isalpha():
-                if tebakan not in st.session_state.hm_guessed:
-                    st.session_state.hm_guessed.add(tebakan)
-                    if tebakan not in kata:
-                        st.session_state.hm_lives -= 1
-                st.rerun()
-
-    if st.sidebar.button("🔁 Kata Baru", use_container_width=True):
-        st.session_state.hm_word = random.choice(kata_game_list)
-        st.session_state.hm_guessed = set()
-        st.session_state.hm_lives = 6
-        st.rerun()
-
-# 3. GAME GACHA / LOOT BOX SIMULATOR
-elif pilih_game == "🎁 Gacha Loot Box":
-    if "gacha_pulls" not in st.session_state:
-        st.session_state.gacha_pulls = 0
-        st.session_state.gacha_ssr = 0
-        st.session_state.gacha_last = "Belum ada pull"
-
-    st.sidebar.caption("Rate: SSR 5% | SR 20% | R 75%")
-    if st.sidebar.button("🎲 Pull 1x Loot Box!", use_container_width=True):
-        st.session_state.gacha_pulls += 1
-        roll = random.randint(1, 100)
-        if roll <= 5 or st.session_state.gacha_pulls % 20 == 0:
-            item = random.choice(["👑 [SSR] RTX 6090 Founders", "⚔️ [SSR] Yamato Vergil", "🚗 [SSR] GTA 6 Collector's Box"])
-            st.session_state.gacha_ssr += 1
-        elif roll <= 25:
-            item = random.choice(["💎 [SR] PS5 Pro 2TB", "🎮 [SR] DualSense Edge", "🕹️ [SR] Steam Deck OLED"])
+def klik_kotak_ttt(idx):
+    if st.session_state.ttt_board[idx] == "" and st.session_state.ttt_winner is None:
+        st.session_state.ttt_board[idx] = "X"
+        hasil = cek_pemenang_ttt(st.session_state.ttt_board)
+        if hasil:
+            st.session_state.ttt_winner = hasil
         else:
-            item = random.choice(["📦 [R] Kabel HDMI", "🔋 [R] Baterai Stik", "🎟️ [R] Voucher Diskon 5%", "🥤 [R] Energy Drink"])
-        st.session_state.gacha_last = item
+            bot_idx = langkah_bot_ttt(st.session_state.ttt_board)
+            if bot_idx is not None:
+                st.session_state.ttt_board[bot_idx] = "O"
+                st.session_state.ttt_winner = cek_pemenang_ttt(st.session_state.ttt_board)
 
-    st.sidebar.info(f"Hasil: **{st.session_state.gacha_last}**")
-    st.sidebar.caption(f"Total Pull: **{st.session_state.gacha_pulls}** | Total SSR: **{st.session_state.gacha_ssr}** (Pity tiap 20x)")
-    if st.sidebar.button("🗑️ Reset Koleksi", use_container_width=True):
-        st.session_state.gacha_pulls = 0
-        st.session_state.gacha_ssr = 0
-        st.session_state.gacha_last = "Belum ada pull"
-        st.rerun()
+for row in range(3):
+    cols = st.sidebar.columns(3)
+    for col in range(3):
+        idx = row * 3 + col
+        val = st.session_state.ttt_board[idx]
+        label = "❌" if val == "X" else ("⭕" if val == "O" else " ")
+        cols[col].button(
+            label,
+            key=f"ttt_cell_{idx}",
+            on_click=klik_kotak_ttt,
+            args=(idx,),
+            use_container_width=True,
+            disabled=(val != "" or st.session_state.ttt_winner is not None)
+        )
 
-# 4. GAME SUIT JEPANG (BATU-GUNTING-KERTAS)
-elif pilih_game == "✊✌️✋ Suit Jepang":
-    if "suit_win" not in st.session_state:
-        st.session_state.suit_win = 0
-        st.session_state.suit_lose = 0
-        st.session_state.suit_msg = "Pilih jurusmu di bawah!"
+if st.session_state.ttt_winner == "X":
+    st.sidebar.success("🎉 Mantap! Kamu Menang!")
+elif st.session_state.ttt_winner == "O":
+    st.sidebar.error("🤖 Bot Menang! Coba lagi!")
+elif st.session_state.ttt_winner == "Seri":
+    st.sidebar.warning("🤝 Hasil Seri!")
 
-    opsi_suit = {"✊ Batu": "✌️ Gunting", "✌️ Gunting": "✋ Kertas", "✋ Kertas": "✊ Batu"}
-    cols_s = st.sidebar.columns(3)
-    for idx_s, jurus in enumerate(["✊ Batu", "✌️ Gunting", "✋ Kertas"]):
-        if cols_s[idx_s].button(jurus.split()[0], key=f"suit_{idx_s}", use_container_width=True):
-            bot_jurus = random.choice(list(opsi_suit.keys()))
-            if jurus == bot_jurus:
-                st.session_state.suit_msg = f"🤝 Seri! Kamu & Bot sama-sama {jurus}"
-            elif opsi_suit[jurus] == bot_jurus:
-                st.session_state.suit_win += 1
-                st.session_state.suit_msg = f"🎉 Menang! {jurus} kalahkan {bot_jurus}"
-            else:
-                st.session_state.suit_lose += 1
-                st.session_state.suit_msg = f"🤖 Kalah! Bot pakai {bot_jurus}"
-
-    st.sidebar.info(st.session_state.suit_msg)
-    st.sidebar.caption(f"🏆 Menang: **{st.session_state.suit_win}** | 💀 Kalah: **{st.session_state.suit_lose}**")
-
-# 5. GAME MINESWEEPER MINI (4x4)
-elif pilih_game == "💣 Minesweeper Mini (4x4)":
-    st.sidebar.caption("Buka 13 kotak aman, hindari **3 ranjau 💣**!")
-    if "ms_bombs" not in st.session_state:
-        st.session_state.ms_bombs = set(random.sample(range(16), 3))
-        st.session_state.ms_opened = set()
-        st.session_state.ms_over = False
-
-    def hitung_bom_sekitar(pos):
-        r, c = divmod(pos, 4)
-        total = 0
-        for dr in [-1, 0, 1]:
-            for dc in [-1, 0, 1]:
-                nr, nc = r + dr, c + dc
-                if 0 <= nr < 4 and 0 <= nc < 4 and (nr * 4 + nc) in st.session_state.ms_bombs:
-                    total += 1
-        return total
-
-    def klik_ms(pos):
-        if not st.session_state.ms_over and pos not in st.session_state.ms_opened:
-            st.session_state.ms_opened.add(pos)
-            if pos in st.session_state.ms_bombs:
-                st.session_state.ms_over = True
-
-    menang_ms = (len(st.session_state.ms_opened - st.session_state.ms_bombs) == 13) and not st.session_state.ms_over
-
-    for r in range(4):
-        cols_m = st.sidebar.columns(4)
-        for c in range(4):
-            pos = r * 4 + c
-            if pos in st.session_state.ms_opened:
-                txt = "💣" if pos in st.session_state.ms_bombs else str(hitung_bom_sekitar(pos))
-            elif st.session_state.ms_over and pos in st.session_state.ms_bombs:
-                txt = "💣"
-            else:
-                txt = " "
-            cols_m[c].button(
-                txt,
-                key=f"ms_{pos}",
-                on_click=klik_ms,
-                args=(pos,),
-                use_container_width=True,
-                disabled=(pos in st.session_state.ms_opened or st.session_state.ms_over or menang_ms)
-            )
-
-    if st.session_state.ms_over:
-        st.sidebar.error("💥 DUAR! Kena ranjau!")
-    elif menang_ms:
-        st.sidebar.success("🎉 Hebat! Semua ranjau terhindari!")
-
-    if st.sidebar.button("🔁 Reset Minesweeper", use_container_width=True):
-        st.session_state.ms_bombs = set(random.sample(range(16), 3))
-        st.session_state.ms_opened = set()
-        st.session_state.ms_over = False
-        st.rerun()
-
-# 6. GAME KUIS TRIVIA GAMING
-elif pilih_game == "🧠 Kuis Trivia Gaming":
-    bank_soal = [
-        {"tanya": "Studio pengembang seri Grand Theft Auto?", "opsi": ["Rockstar Games", "Ubisoft", "Bethesda"], "benar": "Rockstar Games"},
-        {"tanya": "Konsol terlaris sepanjang masa?", "opsi": ["PlayStation 2", "Nintendo Switch", "Xbox 360"], "benar": "PlayStation 2"},
-        {"tanya": "Karakter utama seri The Legend of Zelda?", "opsi": ["Link", "Zelda", "Ganon"], "benar": "Link"},
-        {"tanya": "Engine pembuat game Fortnite?", "opsi": ["Unreal Engine", "Unity", "CryEngine"], "benar": "Unreal Engine"},
-        {"tanya": "Tahun rilis PlayStation pertama di Jepang?", "opsi": ["1994", "1996", "1998"], "benar": "1994"},
-        {"tanya": "Pencipta seri Metal Gear & Death Stranding?", "opsi": ["Hideo Kojima", "Hideta Miyazaki", "Shinji Mikami"], "benar": "Hideo Kojima"}
-    ]
-    if "quiz_idx" not in st.session_state:
-        st.session_state.quiz_idx = 0
-        st.session_state.quiz_score = 0
-
-    soal = bank_soal[st.session_state.quiz_idx % len(bank_soal)]
-    st.sidebar.markdown(f"**Q:** {soal['tanya']}")
-    jawaban_user = st.sidebar.radio("Pilih jawaban:", soal["opsi"], key=f"q_radio_{st.session_state.quiz_idx}")
-    if st.sidebar.button("✅ Cek Jawaban", use_container_width=True):
-        if jawaban_user == soal["benar"]:
-            st.session_state.quiz_score += 1
-            st.sidebar.success("Benar! +1 Poin")
-        else:
-            st.sidebar.error(f"Salah! Harusnya: {soal['benar']}")
-    if st.sidebar.button("➡️ Soal Berikutnya", use_container_width=True):
-        st.session_state.quiz_idx += 1
-        st.rerun()
-    st.sidebar.caption(f"Skor Trivia Kamu: **{st.session_state.quiz_score}**")
+if st.sidebar.button("🔁 Main Ulang Tic-Tac-Toe", use_container_width=True):
+    st.session_state.ttt_board = [""] * 9
+    st.session_state.ttt_winner = None
+    st.rerun()
 
 # --- FILTER & TAMPILAN BERITA ---
 kategori = {k: [] for k in ["🎮 Game Releases & Updates", "🛠️ Tech, Hardware & Performance", "🏢 Industry & Business", "🏆 Esports & Competitive", "🍿 Pop Culture, Media & Leaks", "📌 Lainnya"]}
@@ -472,7 +297,7 @@ for item in semua_berita:
         (pilih_waktu == "3 Days Ago" and sw == 3) or
         (pilih_waktu == "4-7 Days Ago" and (4 <= sw <= 7))
     )
-    web_cocok = (pilih_web == "Semua Website (20 Media)") or (item["sumber"] == pilih_web)
+    web_cocok = (pilih_web == "Semua Website (30 Media)") or (item["sumber"] == pilih_web)
     search_cocok = (search_keyword in item["judul"].lower()) or (search_keyword in item["sumber"].lower()) if search_keyword else True
 
     if waktu_cocok and web_cocok and search_cocok:
