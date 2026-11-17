@@ -4,6 +4,7 @@ import base64
 import glob
 from datetime import datetime, timedelta, timezone
 from time import mktime
+import google.generativeai as genai
 
 # Konfigurasi halaman
 st.set_page_config(
@@ -11,6 +12,10 @@ st.set_page_config(
     page_icon="🎮",
     layout="wide"
 )
+
+# Konfigurasi Gemini API (mengambil dari secrets Streamlit Cloud secara aman)
+if "GEMINI_API_KEY" in st.secrets:
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 # Otomatis mencari file gambar yang mengandung kata 'chunli' di folder project
 def get_chunli_bg():
@@ -119,7 +124,7 @@ custom_ui = (
 st.markdown(custom_ui, unsafe_allow_html=True)
 
 st.title("🎮 Nortisce Global Gaming News Bulldozer")
-st.markdown("Menyerok berita dari **20 kanal game global terbaik** dengan filter kategori, pencarian, ringkasan tajam mendalam, dan sentimen publik.")
+st.markdown("Menyerok berita dari **20 kanal game global terbaik** dengan filter, pencarian, dan analisis AI Gemini murni yang tajam & mendalam.")
 
 RSS_SOURCES = {
     "IGN": "https://feeds.feedburner.com/ign/games-all",
@@ -196,7 +201,6 @@ def muat_data_berita():
             pass
     return semua_berita
 
-# Tombol Refresh Manual di Sidebar
 if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
     st.cache_data.clear()
     st.rerun()
@@ -207,8 +211,6 @@ with st.spinner("⏳ Sedang menyerok berita dari 20 server global..."):
 st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir!")
 
 st.sidebar.header("🎛️ Panel Filter Konten")
-
-# Search Bar
 search_keyword = st.sidebar.text_input("🔍 Cari Judul / Topik Game:", "").lower()
 
 pilih_kategori = st.sidebar.selectbox(
@@ -315,35 +317,39 @@ for kat, daftar in target_tampil:
                 with col2:
                     st.markdown(f"[🔗 Buka Berita]({b['link']})")
                 
-                # Generator Ringkasan Tajam & Kontekstual Berdasarkan Judul Asli
                 expander_key = f"exp_{kat}_{idx}_{b['judul'][:15]}"
                 with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
                     col_btn1, col_btn2 = st.columns(2)
                     
+                    # Logika Pemanggilan Gemini AI Murni yang Unik Tiap Artikel
                     if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
-                        with st.spinner("Membedah esensi berita..."):
-                            j_lower = b['judul'].lower()
-                            # Logika analisis isi agar ringkasan tajam & unik sesuai inti judul
-                            if "layoffs" in j_lower or "fired" in j_lower or "axed" in j_lower:
-                                ringkasan_unik = f"📌 **Bedah Isu Industri:** Laporan dari **{b['sumber']}** ini menyoroti gelombang PHK atau restrukturisasi internal yang kembali memukul industri game. Keputusan ini memicu perdebatan moral terkait stabilitas kerja para talenta senior di balik waralaba besar."
-                            elif "xbox" in j_lower or "playstation" in j_lower or "nintendo" in j_lower or "console" in j_lower:
-                                ringkasan_unik = f"📌 **Bedah Ekosistem Konsol:** Melalui **{b['sumber']}**, terungkap strategi bisnis tingkat tinggi atau manuver perangkat keras terbaru dari pabrikan raksasa, yang langsung mengubah peta persaingan pasar konsol global secara signifikan."
-                            elif "ai" in j_lower or "artificial intelligence" in j_lower:
-                                ringkasan_unik = f"📌 **Bedah Tren Teknologi:** Artikel eksklusif dari **{b['sumber']}** ini mengangkat kontroversi atau adopsi kecerdasan buatan (AI) dalam alur kerja produksi game, memperlihatkan benturan antara efisiensi biaya dan resistensi komunitas."
-                            elif "gta 6" in j_lower or "grand theft auto" in j_lower:
-                                ringkasan_unik = f"📌 **Fenomena Kultur Pop:** Liputan **{b['sumber']}** ini membahas efek domino masif dari kehadiran *GTA 6*—mulai dari dampak ekonomi makro, persiapan industri, hingga demam massal di tengah komunitas gamer dunia."
-                            else:
-                                ringkasan_unik = f"📌 **Esensi Utama:** Berita rilisan **{b['sumber']}** ini membedah mendalam perkembangan krusial seputar *'{b['judul']}'*, memberikan wawasan esensial bagi arah industri dan respons komunitas gamer saat ini."
+                        with st.spinner("Gemini sedang menganalisis esensi dan konteks berita secara mendalam..."):
+                            try:
+                                model = genai.GenerativeModel('gemini-1.5-flash')
+                                prompt = (
+                                    f"Bertindaklah sebagai jurnalis dan analis industri game profesional. "
+                                    f"Analisis secara mendalam, tajam, dan unik judul serta konteks berita berikut dari media {b['sumber']}. "
+                                    f"Jangan gunakan format atau templat yang kaku. Berikan ulasan/ringkasan analitis yang bernas dan spesifik tentang mengapa berita ini penting dalam 3-4 kalimat berbahasa Indonesia:\n\n"
+                                    f"Judul: {b['judul']}\n"
+                                    f"Konten/Deskripsi: {b['deskripsi']}"
+                                )
+                                response = model.generate_content(prompt)
+                                st.success(response.text)
+                            except Exception as e:
+                                st.error("⚠️ Gagal memuat analisis Gemini. Pastikan API Key Gemini sudah dimasukkan ke Streamlit Cloud Secrets.")
                             
-                            st.success(ringkasan_unik)
-                            
+                    # Logika Sentimen Publik Gemini Murni
                     if col_btn2.button("📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"):
-                        with st.spinner("Menganalisis sentimen komunitas..."):
-                            judul_l = b['judul'].lower()
-                            if any(k in judul_l for k in ["delay", "layoffs", "fail", "nerf", "controversy", "bad", "issue", "axed"]):
-                                sentimen = "🔴 **Negatif / Cemas:** Komunitas mengekspresikan kekecewaan mendalam, kemarahan, atau kekhawatiran atas arah kebijakan yang diambil studio terkait."
-                            elif any(k in judul_l for k in ["update", "release", "free", "win", "great", "out now", "good", "boost"]):
-                                sentimen = "🟢 **Positif / Hype Tinggi:** Sambutan komunitas terpantau sangat antusias, penuh optimisme, dan menyambut hangat gebrakan ini."
-                            else:
-                                sentimen = "🟡 **Kritis / Netral:** Komunitas bersikap objektif dan menunggu pembuktian nyata tanpa reaksi emosional yang berlebihan."
-                            st.info(f"**Analisis Reaksi Komunitas:**\n\n{sentimen}")
+                        with st.spinner("Gemini sedang memindai reaksi komunitas..."):
+                            try:
+                                model = genai.GenerativeModel('gemini-1.5-flash')
+                                prompt = (
+                                    f"Bertindaklah sebagai pengamat komunitas game global (Reddit, ResetEra, Twitter). "
+                                    f"Analisis bagaimana reaksi atau sentimen publik gamer terhadap berita berikut secara spesifik, "
+                                    f"berikan klasifikasinya (Positif, Negatif, atau Netral) beserta alasan rasionalnya dalam bahasa Indonesia:\n\n"
+                                    f"Judul: {b['judul']}"
+                                )
+                                response = model.get_content() if hasattr(model, 'get_content') else model.generate_content(prompt)
+                                st.info(response.text)
+                            except Exception as e:
+                                st.error("⚠️ Gagal memuat sentimen AI. Periksa konfigurasi API Key Anda.")
