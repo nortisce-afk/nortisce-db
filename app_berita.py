@@ -15,7 +15,7 @@ st.set_page_config(
 
 # Inisialisasi status buka/tutup sidebar
 if "sidebar_open" not in st.session_state:
-  st.session_state.sidebar_open = True  # Default terbuka agar langsung terlihat
+  st.session_state.sidebar_open = True
 
 # Mengambil daftar banyak API Key dari Streamlit Secrets
 daftar_api_keys = []
@@ -59,7 +59,7 @@ else:
 
 sidebar_left_pos = "0px" if st.session_state.sidebar_open else "-300px"
 
-# --- CLEAN GAMING UI CSS + TOGGLE SIDEBAR ---
+# --- CLEAN GAMING UI CSS + CUSTOM ARROW TOGGLE DI POJOK KIRI ATAS ---
 custom_ui = (
     "<style>"
     ".stApp { background-image:"
@@ -81,6 +81,32 @@ custom_ui = (
     " transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;"
     " box-shadow: 5px 0 25px rgba(0, 0, 0, 0.8) !important;"
     " border-right: 1px solid rgba(56, 189, 248, 0.4) !important;"
+    "}"
+    # --- TOMBOL PANAH IKON DI POJOK KIRI ATAS ---
+    ".floating-sidebar-toggle {"
+    " position: fixed;"
+    " top: 12px;"
+    f" left: {'265px' if st.session_state.sidebar_open else '15px'};"
+    " z-index: 1000000;"
+    " background: rgba(15, 23, 42, 0.8);"
+    " border: 1px solid rgba(56, 189, 248, 0.5);"
+    " color: #38bdf8;"
+    " width: 36px;"
+    " height: 36px;"
+    " border-radius: 8px;"
+    " display: flex;"
+    " align-items: center;"
+    " justify-content: center;"
+    " text-decoration: none;"
+    " font-size: 18px;"
+    " font-weight: bold;"
+    " transition: all 0.3s ease;"
+    " backdrop-filter: blur(4px);"
+    "}"
+    ".floating-sidebar-toggle:hover {"
+    " background: rgba(56, 189, 248, 0.25);"
+    " color: #ffffff;"
+    " border-color: #38bdf8;"
     "}"
     # --- LAPISAN OVERLAY KLIK DI LUAR SIDEBAR ---
     + (
@@ -183,6 +209,11 @@ custom_ui = (
         if st.session_state.sidebar_open
         else ""
     )
+    # Tombol Panah Floating di Pojok Kiri Atas
+    + f'<a href="?toggle_sidebar={0 if st.session_state.sidebar_open else 1}"'
+    ' class="floating-sidebar-toggle"'
+    f' title="{"Tutup Menu" if st.session_state.sidebar_open else "Buka Menu"}">'
+    f'{"❮" if st.session_state.sidebar_open else "❯"}</a>'
     + '<div class="metal-slug-banner"><div class="metal-slug-runner"><div'
     ' class="sprite-body">'
     '<svg viewBox="0 0 16 16" width="40" height="40"'
@@ -208,18 +239,7 @@ custom_ui = (
 )
 st.markdown(custom_ui, unsafe_allow_html=True)
 
-# --- TOMBOL TOGGLE SIDEBAR UTAMA DI HALAMAN ---
-col_toggle, col_title = st.columns([1, 15])
-with col_toggle:
-  label_toggle = "❌ Tutup Menu" if st.session_state.sidebar_open else "📂 Buka Menu"
-  target_state = "0" if st.session_state.sidebar_open else "1"
-  if st.button(label_toggle, use_container_width=True):
-    st.session_state.sidebar_open = not st.session_state.sidebar_open
-    st.rerun()
-
-with col_title:
-  st.title("🎮 Nortisce Gaming News Database")
-
+st.title("🎮 Nortisce Gaming News Database")
 st.markdown(
     "Database berita game terkini dari **20 kanal global + 8 kanal lokal"
     " terbaik** lengkap dengan thumbnail asli, filter, dan analisis AI Gemini."
