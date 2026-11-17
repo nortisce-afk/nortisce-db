@@ -42,26 +42,32 @@ if sidebar_bg_base64:
 else:
     sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.98) !important; }'
 
-# --- CLEAN GAMING UI CSS + AUTO-HIDE SIDEBAR (DESKTOP HOVER & MOBILE SWIPE) ---
+# Cek status buka/tutup sidebar via session_state untuk tombol mobile & desktop hover
+if "sidebar_open" not in st.session_state:
+    st.session_state.sidebar_open = False
+
+sidebar_left_pos = "0px" if st.session_state.sidebar_open else "-300px"
+
+# --- CLEAN GAMING UI CSS + TOGGLE SIDEBAR MOBILE ---
 custom_ui = (
     '<style>'
     '.stApp { background-image: linear-gradient(rgba(8, 12, 20, 0.85), rgba(8, 12, 20, 0.92)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
     + sidebar_css +
     'header[data-testid="stHeader"] { background-color: transparent !important; }'
     
-    # --- FITUR AUTO-HIDE SIDEBAR ---
+    # --- FITUR KONTROL SIDEBAR (DESKTOP HOVER & MOBILE TOGGLE) ---
     '[data-testid="stSidebar"] {'
     '    position: fixed !important;'
     '    top: 0 !important;'
-    '    left: -300px !important;'
+    f'    left: {sidebar_left_pos} !important;'
     '    width: 300px !important;'
     '    height: 100vh !important;'
     '    z-index: 999999 !important;'
     '    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;'
-    '    box-shadow: 5px 0 25px rgba(0, 0, 0, 0.7) !important;'
+    '    box-shadow: 5px 0 25px rgba(0, 0, 0, 0.8) !important;'
     '    border-right: 1px solid rgba(56, 189, 248, 0.4) !important;'
     '}'
-    # Penanda garis tipis neon di tepi kiri layar
+    # Penanda garis tipis neon di tepi kiri layar (untuk desktop hover)
     '.sidebar-trigger-area {'
     '    position: fixed;'
     '    top: 0;'
@@ -72,7 +78,6 @@ custom_ui = (
     '    background: linear-gradient(to right, rgba(56, 189, 248, 0.9), transparent);'
     '    pointer-events: auto;'
     '}'
-    # Saat kursor menyentuh garis penanda atau menyentuh sidebar itu sendiri, sidebar meluncur keluar
     '.sidebar-trigger-area:hover ~ [data-testid="stSidebar"], [data-testid="stSidebar"]:hover {'
     '    left: 0 !important;'
     '}'
@@ -154,6 +159,14 @@ custom_ui = (
     '</svg></div><div class="bullet-1"></div><div class="bullet-2"></div></div></div>'
 )
 st.markdown(custom_ui, unsafe_allow_html=True)
+
+# Tombol interaktif di bagian atas agar pengguna HP/Desktop bisa klik untuk Buka/Tutup Menu Filter
+col_tgl1, col_tgl2 = st.columns([2, 5])
+with col_tgl1:
+    label_btn = "❌ Tutup Panel Filter" if st.session_state.sidebar_open else "☰ Buka Menu & Filter"
+    if st.button(label_btn, use_container_width=True):
+        st.session_state.sidebar_open = not st.session_state.sidebar_open
+        st.rerun()
 
 st.title("🎮 Nortisce Gaming News Database")
 st.markdown("Database berita game terkini dari **20 kanal global + 8 kanal lokal terbaik** lengkap dengan thumbnail, filter, dan analisis AI Gemini.")
