@@ -13,11 +13,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# Input API Key langsung di Sidebar (atau otomatis ambil dari Secrets jika ada)
-st.sidebar.header("🔑 Konfigurasi AI")
-default_key = st.secrets["GEMINI_API_KEY"] if "GEMINI_API_KEY" in st.secrets else ""
-api_key_input = st.sidebar.text_input("Masukkan Gemini API Key:", value=default_key, type="password")
-
+# Konfigurasi API Key otomatis dari Streamlit Secrets (bersih tanpa kotak input di sidebar)
+api_key_input = st.secrets["GEMINI_API_KEY"] if "GEMINI_API_KEY" in st.secrets else ""
 if api_key_input:
     genai.configure(api_key=api_key_input)
 
@@ -146,8 +143,8 @@ def analisis_gemini_cepat(api_key, mode, judul, sumber, deskripsi):
         )
     else:
         prompt = (
-            f"Sebagai pengamat komunitas game, tentukan sentimen publik (Positif / Negatif / Netral) dan alasan tajamnya dalam 2-3 kalimat bahasa Indonesia untuk berita ini:\n"
-            f"Judul: {judul}\nKonteks: {deskripsi}"
+            f"As a gaming community observer, determine public sentiment (Positive / Negative / Neutral) and its sharp reasoning in 2-3 sentences of Indonesian for this news:\n"
+            f"Title: {judul}\nContext: {deskripsi}"
         )
     response = model.generate_content(prompt)
     return response.text
@@ -233,7 +230,7 @@ for kat, daftar in target_tampil:
                     
                     if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
                         if not api_key_input:
-                            st.warning("⚠️ Tempelkan Gemini API Key kamu di kolom sidebar kiri paling atas dulu ya!")
+                            st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
                         else:
                             with st.spinner("Menganalisis..."):
                                 try:
@@ -244,7 +241,7 @@ for kat, daftar in target_tampil:
                             
                     if col_btn2.button("📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"):
                         if not api_key_input:
-                            st.warning("⚠️ Tempelkan Gemini API Key kamu di kolom sidebar kiri paling atas dulu ya!")
+                            st.warning("⚠️ API Key belum dikonfigurasi di Streamlit Secrets.")
                         else:
                             with st.spinner("Memindai sentimen..."):
                                 try:
