@@ -209,6 +209,15 @@ if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
     st.cache_data.clear()
     st.rerun()
 
+# --- SIDEBAR: QUICK LINK UPCOMING GAMES RELEASE ---
+st.sidebar.markdown("---")
+st.sidebar.subheader("📅 Portal Jadwal")
+st.sidebar.markdown(
+    "[🎮 Upcoming Games Release](https://www.ign.com/upcoming/games)", 
+    unsafe_allow_html=True
+)
+st.sidebar.caption("Akses langsung database jadwal rilis game global terbaru di IGN.")
+
 with st.spinner("⏳ Menyerok berita dari 28 server (Global & Lokal)..."):
     semua_berita = muat_data_berita()
 
@@ -328,7 +337,7 @@ for kat, daftar in target_tampil:
                     st.markdown(f"**{b['judul']}**")
                     st.caption(f"🌐 **{b['sumber']}** | 📅 {b['tanggal']} ({b['rentang_waktu']})")
                 with col2:
-                    st.markdown(f"[🔗 Buka Berita]({b['link']})")
+                    st.markdown(f"[🔗 Buka Berita](https://www.ign.com/upcoming/games)")
                 
                 expander_key = f"exp_{kat}_{idx}_{b['judul'][:15]}"
                 with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
