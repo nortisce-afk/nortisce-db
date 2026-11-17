@@ -42,7 +42,7 @@ if sidebar_bg_base64:
 else:
     sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.95) !important; }'
 
-# --- CLEAN GAMING UI CSS (TRANSPARAN PENUH) ---
+# --- CLEAN GAMING UI CSS (TRANSPARAN PENUH UNTUK SEMUA DROPDOWN & INPUT) ---
 custom_ui = (
     '<style>'
     '.stApp { background-image: linear-gradient(rgba(8, 12, 20, 0.85), rgba(8, 12, 20, 0.92)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
@@ -65,41 +65,55 @@ custom_ui = (
     # Kartu Berita Clean
     'div.stContainer { background-color: rgba(15, 23, 42, 0.45); backdrop-filter: blur(8px); padding: 15px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.25); margin-bottom: 12px; }'
     
-    # Membuat SEMUA tombol (termasuk Refresh Cache Berita) menjadi transparan
-    'div.stButton > button {'
+    # Membuat SEMUA tombol transparan
+    'div.stButton > button, button[kind="secondary"] {'
     '    background-color: transparent !important;'
     '    border: 1px solid rgba(56, 189, 248, 0.45) !important;'
     '    color: #f8fafc !important;'
     '    border-radius: 8px !important;'
     '}'
-    'div.stButton > button:hover {'
+    'div.stButton > button:hover, button[kind="secondary"]:hover {'
     '    background-color: rgba(56, 189, 248, 0.15) !important;'
     '    border-color: #38bdf8 !important;'
     '}'
     
-    # Membuat SEMUA dropdown (Selectbox) & kotak input teks menjadi transparan penuh
+    # Menghapus warna abu-abu di seluruh lapisan Dropdown (Selectbox) & Input Teks
+    'div[data-baseweb="select"],'
     'div[data-baseweb="select"] > div,'
+    'div[data-baseweb="select"] > div > div,'
+    'div[data-baseweb="input"],'
     'div[data-baseweb="input"] > div,'
-    'div[data-baseweb="base-input"] {'
+    'div[data-baseweb="base-input"],'
+    '.stSelectbox div[data-baseweb="select"] > div,'
+    '.stTextInput div[data-baseweb="input"] {'
     '    background-color: transparent !important;'
+    '    background: transparent !important;'
+    '    color: #f8fafc !important;'
+    '}'
+    
+    # Bingkai (Border) luar untuk Dropdown & Input Teks
+    'div[data-baseweb="select"] > div,'
+    'div[data-baseweb="base-input"] {'
     '    border: 1px solid rgba(56, 189, 248, 0.45) !important;'
     '    border-radius: 8px !important;'
-    '    color: #f8fafc !important;'
+    '}'
+    'div[data-baseweb="select"] > div:hover,'
+    'div[data-baseweb="base-input"]:hover {'
+    '    border-color: #38bdf8 !important;'
     '}'
     'div[data-baseweb="input"] input {'
     '    background-color: transparent !important;'
     '    color: #f8fafc !important;'
     '}'
-    'div[data-baseweb="select"] > div:hover,'
-    'div[data-baseweb="input"] > div:hover {'
-    '    border-color: #38bdf8 !important;'
-    '}'
     
     # Menu list saat dropdown diklik dibuka
-    'ul[role="listbox"], div[data-baseweb="popover"] > div {'
+    'ul[role="listbox"], div[data-baseweb="popover"] > div, li[role="option"] {'
     '    background-color: rgba(10, 15, 28, 0.92) !important;'
     '    backdrop-filter: blur(12px) !important;'
-    '    border: 1px solid rgba(56, 189, 248, 0.4) !important;'
+    '    color: #f8fafc !important;'
+    '}'
+    'li[role="option"]:hover {'
+    '    background-color: rgba(56, 189, 248, 0.25) !important;'
     '}'
     '</style>'
     '<div class="metal-slug-banner"><div class="metal-slug-runner"><div class="sprite-body">'
