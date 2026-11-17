@@ -35,19 +35,49 @@ sidebar_bg_base64, img_mime = get_chunli_bg()
 if sidebar_bg_base64:
     sidebar_css = (
         '[data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {'
-        f'    background-image: linear-gradient(rgba(10, 15, 30, 0.70), rgba(10, 15, 30, 0.85)), url("data:{img_mime};base64,{sidebar_bg_base64}") !important;'
+        f'    background-image: linear-gradient(rgba(10, 15, 30, 0.85), rgba(10, 15, 30, 0.95)), url("data:{img_mime};base64,{sidebar_bg_base64}") !important;'
         '    background-size: cover !important; background-position: center 15% !important; background-repeat: no-repeat !important;'
         '}'
     )
 else:
-    sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.95) !important; }'
+    sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.98) !important; }'
 
-# --- CLEAN GAMING UI CSS (TRANSPARAN PENUH & ELEGAN) ---
+# --- CLEAN GAMING UI CSS + AUTO-HIDE SIDEBAR ---
 custom_ui = (
     '<style>'
     '.stApp { background-image: linear-gradient(rgba(8, 12, 20, 0.85), rgba(8, 12, 20, 0.92)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
     + sidebar_css +
     'header[data-testid="stHeader"] { background-color: transparent !important; }'
+    
+    # --- FITUR AUTO-HIDE SIDEBAR (GESER & HOVER) ---
+    '[data-testid="stSidebar"] {'
+    '    position: fixed !important;'
+    '    top: 0 !important;'
+    '    left: -300px !important;'
+    '    width: 300px !important;'
+    '    height: 100vh !important;'
+    '    z-index: 999999 !important;'
+    '    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;'
+    '    box-shadow: 5px 0 25px rgba(0, 0, 0, 0.7) !important;'
+    '    border-right: 1px solid rgba(56, 189, 248, 0.4) !important;'
+    '}'
+    # Munculkan sidebar saat kursor diarahkan ke area kiri (0 hingga 20px dari tepi layar) atau saat sidebar di-hover
+    'body::before {'
+    '    content: "";'
+    '    position: fixed;'
+    '    top: 0;'
+    '    left: 0;'
+    '    width: 14px;'
+    '    height: 100vh;'
+    '    z-index: 999998;'
+    '    background: linear-gradient(to right, rgba(56, 189, 248, 0.8), transparent);'
+    '    pointer-events: auto;'
+    '}'
+    'body::before:hover + [data-testid="stSidebar"], [data-testid="stSidebar"]:hover {'
+    '    left: 0 !important;'
+    '}'
+    
+    # Metal Slug Runner Animation Banner
     '.metal-slug-banner { position: fixed; top: 0; left: 0; width: 100%; height: 50px; overflow: hidden; pointer-events: none; z-index: 999990; }'
     '@keyframes patrolShoot { 0% { left: -60px; transform: scaleX(1); } 47% { left: calc(100% - 210px); transform: scaleX(1); } 50% { left: calc(100% - 210px); transform: scaleX(-1); } 97% { left: -60px; transform: scaleX(-1); } 100% { left: -60px; transform: scaleX(1); } }'
     '@keyframes runBounce { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-3px); } }'
@@ -166,7 +196,6 @@ def bersihkan_html(teks):
     return re.sub(r'\s+', ' ', teks_bersih).strip()[:600]
 
 def ambil_thumbnail(entry):
-    # Daftar gambar cadangan (fallback) bertema gaming beresolusi tinggi yang dijamin aktif & clean
     fallback_game_images = [
         "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=600&auto=format&fit=crop",
@@ -192,7 +221,6 @@ def ambil_thumbnail(entry):
         if match:
             candi_url = match.group(1)
 
-    # Validasi URL: Jika domain Pure Xbox / IGN / Cloudflare yang sering blokir hotlinking, langsung ganti dengan fallback
     if not candi_url or any(bad in candi_url.lower() for bad in ['purexbox.com', 'nintendolife.com', 'pushsquare.com', 'kickstarter', 'ads']):
         return random.choice(fallback_game_images)
         
@@ -229,7 +257,6 @@ def muat_data_berita():
         except Exception:
             pass
     
-    # Algoritma Hype & Engagement Scoring
     kata_penting = []
     for item in semua_berita:
         kata2 = [w.lower() for w in re.findall(r'\b[A-Za-z]{4,}\b', item["judul"]) if w.lower() not in ['with', 'from', 'this', 'that', 'have', 'will', 'your']]
@@ -483,7 +510,6 @@ for idx, b in enumerate(berita_paginasi):
         col_img, col_txt = st.columns([1, 4])
         
         with col_img:
-            # Render menggunakan st.image bawaan Streamlit yang aman dari blokir iframe/sandbox
             st.image(b['thumbnail'], use_column_width=True)
             
         with col_txt:
@@ -514,7 +540,7 @@ for idx, b in enumerate(berita_paginasi):
                             hasil = analisis_gemini_multi_key(tuple(daftar_api_keys), "sentimen", b['judul'], b['sumber'], b['deskripsi'])
                             st.info(hasil)
                         except Exception as e:
-                            st.error(f"Detail kendala: {e}")
+                            st.error(f"Detail kendala:/ {e}")
 
 # --- Paginasi Bagian Bawah (Tersinkronisasi otomatis dengan atas) ---
 if total_pages > 1:
