@@ -64,6 +64,29 @@ custom_ui = (
     + sidebar_css
     + 'header[data-testid="stHeader"] { background-color: transparent'
     " !important; }"
+    # CSS Transparan untuk Tombol, Selectbox, & Input Box (Filter, Refresh, dan Navigasi Page)
+    'div.stButton > button, button[kind="secondary"] { background-color:'
+    " rgba(15, 20, 35, 0.6) !important; border: 1px solid rgba(255, 120, 0,"
+    " 0.4) !important; color: #ffffff !important; border-radius: 8px !important;"
+    " backdrop-filter: blur(4px); }"
+    'div.stButton > button:hover, button[kind="secondary"]:hover {'
+    " background-color: rgba(255, 120, 0, 0.25) !important; border-color:"
+    " #ff7800 !important; }"
+    'div[data-baseweb="select"] > div, div[data-baseweb="base-input"],'
+    " div[data-baseweb=\"input\"] { background-color: rgba(15, 20, 35, 0.6)"
+    " !important; background: rgba(15, 20, 35, 0.6) !important; border: 1px"
+    " solid rgba(255, 120, 0, 0.4) !important; border-radius: 8px !important;"
+    " color: #ffffff !important; backdrop-filter: blur(4px); }"
+    'div[data-baseweb="select"] > div:hover, div[data-baseweb="base-input"]:hover'
+    " { border-color: #ff7800 !important; }"
+    'div[data-baseweb="input"] input, div[data-baseweb="select"] span {'
+    " color: #ffffff !important; }"
+    'ul[role="listbox"], div[data-baseweb="popover"] > div {'
+    " background-color: rgba(10, 15, 25, 0.95) !important; backdrop-filter:"
+    " blur(10px) !important; border: 1px solid rgba(255, 120, 0, 0.4) !important;"
+    " color: #ffffff !important; }"
+    'li[role="option"]:hover { background-color: rgba(255, 120, 0, 0.3)'
+    " !important; }"
     ".metal-slug-banner { position: fixed; top: 0; left: 0; width: 100%; height:"
     " 60px; overflow: hidden; pointer-events: none; z-index: 999990; }"
     "@keyframes patrolShoot { 0% { left: -60px; transform: scaleX(1); } 47% {"
