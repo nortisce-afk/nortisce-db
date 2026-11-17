@@ -170,29 +170,24 @@ def bersihkan_html(teks):
 
 
 def ambil_thumbnail(entry):
-  # 1. Cek media_thumbnail
   if hasattr(entry, "media_thumbnail") and entry.media_thumbnail:
     for t in entry.media_thumbnail:
       if "url" in t:
         return t["url"]
-  # 2. Cek media_content
   if hasattr(entry, "media_content") and entry.media_content:
     for m in entry.media_content:
       if "url" in m and m.get("type", "").startswith("image/"):
         return m["url"]
       elif "url" in m and not m.get("type"):
         return m["url"]
-  # 3. Cek enclosures
   if hasattr(entry, "enclosures") and entry.enclosures:
     for enc in entry.enclosures:
       if enc.get("type", "").startswith("image/") and enc.get("href"):
         return enc.get("href")
-  # 4. Cek links
   if hasattr(entry, "links") and entry.links:
     for l in entry.links:
       if l.get("type", "").startswith("image/") and l.get("href"):
         return l.get("href")
-  # 5. Ekstraksi tag <img> dari summary atau content
   raw_html = ""
   if hasattr(entry, "summary"):
     raw_html += entry.summary
@@ -580,17 +575,33 @@ if "halaman_aktif" not in st.session_state:
 if st.session_state.halaman_aktif > total_pages:
   st.session_state.halaman_aktif = 1
 
-# Dropdown Pemilihan Halaman (Scroll Down Fitur Format Page X dari Y)
-halaman_pilihan = st.selectbox(
-    f"📄 Pilih Halaman (Total {total_pages} Page Tersedia):",
-    range(1, total_pages + 1),
-    format_func=lambda x: (
-        f"Page {x} dari {total_pages} (Menampilkan 20 Berita)"
-    ),
-    index=st.session_state.halaman_aktif - 1,
-)
+# Sinkronisasi state untuk pagination atas dan bawah
+st.session_state.top_pagination = st.session_state.halaman_aktif
+st.session_state.bottom_pagination = st.session_state.halaman_aktif
 
-st.session_state.halaman_aktif = halaman_pilihan
+
+def ubah_halaman_atas():
+  st.session_state.halaman_aktif = st.session_state.top_pagination
+  st.session_state.bottom_pagination = st.session_state.top_pagination
+
+
+def ubah_halaman_bawah():
+  st.session_state.halaman_aktif = st.session_state.bottom_pagination
+  st.session_state.top_pagination = st.session_state.bottom_pagination
+
+
+# Navigasi Halaman Bagian Atas
+if total_pages > 1:
+  st.selectbox(
+      f"📄 Pilih Halaman (Total {total_pages} Page Tersedia):",
+      range(1, total_pages + 1),
+      format_func=lambda x: (
+          f"Page {x} dari {total_pages} (Menampilkan 20 Berita)"
+      ),
+      key="top_pagination",
+      on_change=ubah_halaman_atas,
+  )
+
 current_page = st.session_state.halaman_aktif
 
 start_idx = (current_page - 1) * items_per_page
@@ -604,7 +615,6 @@ st.markdown(
 
 for idx, b in enumerate(berita_paginasi):
   with st.container():
-    # Menggunakan tata letak 2 kolom: Kolom Kiri untuk Gambar Thumbnail Asli, Kolom Kanan untuk Teks & Tombol
     col_img, col_txt = st.columns([1, 4])
     with col_img:
       if b["thumbnail"]:
@@ -669,3 +679,14 @@ for idx, b in enumerate(berita_paginasi):
               st.info(hasil)
             except Exception as e:
               st.error(f"Detail kendala: {e}")
+
+# Navigasi Halaman Bagian Bawah (Scroll Down)
+if total_pages > 1:
+  st.markdown("---")
+  st.selectbox(
+      f"📄 Navigasi Halaman Bawah (Total {total_pages} Page):",
+      range(1, total_pages + 1),
+      format_func=lambda x: f"Page {x} dari {total_pages}",
+      key="bottom_pagination",
+      on_change=ubah_halaman_bawah,
+  )
