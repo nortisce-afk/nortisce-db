@@ -125,7 +125,7 @@ st.markdown(custom_ui, unsafe_allow_html=True)
 st.title("🎮 Nortisce News Database")
 st.markdown(
     "Menyerok berita dari **20 kanal global + 10 kanal lokal terbaik** dengan"
-    " filter, pencarian, dan analisis AI Gemini cepat."
+    " thumbnail asli dari sumber, filter, dan analisis AI Gemini cepat."
 )
 
 RSS_SOURCES = {
@@ -169,6 +169,47 @@ def bersihkan_html(teks):
   return re.sub(r"\s+", " ", teks_bersih).strip()[:600]
 
 
+def ambil_thumbnail(entry):
+  # 1. Cek media_thumbnail
+  if hasattr(entry, "media_thumbnail") and entry.media_thumbnail:
+    for t in entry.media_thumbnail:
+      if "url" in t:
+        return t["url"]
+  # 2. Cek media_content
+  if hasattr(entry, "media_content") and entry.media_content:
+    for m in entry.media_content:
+      if "url" in m and m.get("type", "").startswith("image/"):
+        return m["url"]
+      elif "url" in m and not m.get("type"):
+        return m["url"]
+  # 3. Cek enclosures
+  if hasattr(entry, "enclosures") and entry.enclosures:
+    for enc in entry.enclosures:
+      if enc.get("type", "").startswith("image/") and enc.get("href"):
+        return enc.get("href")
+  # 4. Cek links
+  if hasattr(entry, "links") and entry.links:
+    for l in entry.links:
+      if l.get("type", "").startswith("image/") and l.get("href"):
+        return l.get("href")
+  # 5. Ekstraksi tag <img> dari summary atau content
+  raw_html = ""
+  if hasattr(entry, "summary"):
+    raw_html += entry.summary
+  if hasattr(entry, "content"):
+    for c in entry.content:
+      raw_html += c.get("value", "")
+  if raw_html:
+    img_matches = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', raw_html)
+    for src in img_matches:
+      if src.startswith("http") and not any(
+          x in src.lower()
+          for x in ["pixel", "spacer", "icon", "logo", "avatar", "track"]
+      ):
+        return src
+  return None
+
+
 @st.cache_data(ttl=3600)
 def muat_data_berita():
   semua_berita = []
@@ -181,6 +222,7 @@ def muat_data_berita():
       for entry in feed.entries:
         raw_desc = getattr(entry, "summary", entry.title)
         clean_desc = bersihkan_html(raw_desc)
+        thumb_url = ambil_thumbnail(entry)
         if hasattr(entry, "published_parsed") and entry.published_parsed:
           pub_dt = datetime.fromtimestamp(
               mktime(entry.published_parsed), timezone.utc
@@ -205,6 +247,7 @@ def muat_data_berita():
                 "rentang_waktu": label_waktu,
                 "selisih_hari": selisih_hari,
                 "deskripsi": clean_desc,
+                "thumbnail": thumb_url,
             }
             if info not in semua_berita:
               semua_berita.append(info)
@@ -292,7 +335,7 @@ if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
   st.cache_data.clear()
   st.rerun()
 
-with st.spinner("⏳ Menyerok berita dari 30 server (Global & Lokal)..."):
+with st.spinner("⏳ Menyerok berita & thumbnail dari 30 server..."):
   semua_berita = muat_data_berita()
 
 st.success(
@@ -561,15 +604,29 @@ st.markdown(
 
 for idx, b in enumerate(berita_paginasi):
   with st.container():
-    col1, col2 = st.columns([4, 1])
-    with col1:
-      st.markdown(f"**{b['judul']}**")
+    # Menggunakan tata letak 2 kolom: Kolom Kiri untuk Gambar Thumbnail Asli, Kolom Kanan untuk Teks & Tombol
+    col_img, col_txt = st.columns([1, 4])
+    with col_img:
+      if b["thumbnail"]:
+        try:
+          st.image(b["thumbnail"], use_container_width=True)
+        except Exception:
+          st.image(
+              "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop",
+              use_container_width=True,
+          )
+      else:
+        st.image(
+            "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop",
+            use_container_width=True,
+        )
+
+    with col_txt:
+      st.markdown(f"**[{b['judul']}]({b['link']})**")
       st.caption(
           f"📂 *{b['kategori_asal']}* | 🌐 **{b['sumber']}** | 📅"
           f" {b['tanggal']} ({b['rentang_waktu']})"
       )
-    with col2:
-      st.markdown(f"[🔗 Buka Berita]({b['link']})")
 
     expander_key = (
         f"exp_p{current_page}_{idx}_{re.sub(r'[^a-zA-Z0-9]', '', b['judul'][:10])}"
