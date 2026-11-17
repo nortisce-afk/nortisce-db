@@ -178,7 +178,15 @@ def ambil_thumbnail(entry):
     match = re.search(r'src=["\'](https?://[^"\']+\.(?:jpg|jpeg|png|webp))["\']', raw_html, re.IGNORECASE)
     if match:
         return match.group(1)
-    return "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop"
+    
+    # Kumpulan gambar cadangan (fallback) bertema gaming yang clean jika gambar asli gagal/kosong
+    fallback_game_images = [
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop"
+    ]
+    return random.choice(fallback_game_images)
 
 @st.cache_data(ttl=3600)
 def muat_data_berita():
@@ -211,44 +219,32 @@ def muat_data_berita():
         except Exception:
             pass
     
-    # --- METODE 1 & 2: SMART HYPE & ENGAGEMENT SCORING ---
-    # Hitung frekuensi kemunculan kata kunci utama di seluruh judul (Cross-Source Trending)
+    # Algoritma Hype & Engagement Scoring
     kata_penting = []
     for item in semua_berita:
-        # Ambil kata-kata yang lebih dari 4 huruf sebagai kata kunci topik
         kata2 = [w.lower() for w in re.findall(r'\b[A-Za-z]{4,}\b', item["judul"]) if w.lower() not in ['with', 'from', 'this', 'that', 'have', 'will', 'your']]
         kata_penting.extend(kata2)
     
     from collections import Counter
     frekuensi_topik = Counter(kata_penting)
-
-    # Kata kunci pemicu engagement tinggi (High-Hype Trigger Words)
     hype_keywords = ['gta', 'grand theft auto', 'release', 'trailer', 'leak', 'rumor', 'ps5', 'switch 2', 'remake', 'update', 'dlc', 'free', 'xbox', 'nintendo']
 
     for item in semua_berita:
         skor_hype = 0
         judul_lc = item["judul"].lower()
-        
-        # 1. Tambah skor jika judul mengandung kata hype tinggi
         for hk in hype_keywords:
             if hk in judul_lc:
                 skor_hype += 15
-        
-        # 2. Tambah skor Cross-Source Trending (jika topiknya banyak dibahas media lain)
         for kata in set(re.findall(r'\b[A-Za-z]{4,}\b', item["judul"])):
             if frekuensi_topik[kata.lower()] > 1:
                 skor_hype += (frekuensi_topik[kata.lower()] * 5)
-                
-        # 3. Faktor Kebaruan Waktu (Freshness): Makin baru (dalam jam), makin tinggi poinnya
         jam_lalu = item["selisih_jam"]
         if jam_lalu <= 24:
-            skor_hype += max(0, int(50 - (jam_lalu * 1.5))) # Berita dalam 24 jam terakhir dapat bonus besar
+            skor_hype += max(0, int(50 - (jam_lalu * 1.5)))
         elif jam_lalu <= 72:
             skor_hype += 15
-            
         item["skor_engagement"] = skor_hype
 
-    # Urutkan berita dari skor engagement tertinggi ke terendah secara default
     semua_berita.sort(key=lambda x: x["skor_engagement"], reverse=True)
     return semua_berita
 
@@ -477,7 +473,11 @@ for idx, b in enumerate(berita_paginasi):
         col_img, col_txt = st.columns([1, 4])
         
         with col_img:
-            st.image(b['thumbnail'], use_column_width=True)
+            # Menggunakan HTML tag img dengan onerror agar otomatis fallback jika gambar asal gagal dimuat
+            st.markdown(
+                f'<img src="{b["thumbnail"]}" onerror="this.onerror=null;this.src=\'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop\';" style="width:100%; border-radius:8px; object-fit:cover; aspect-ratio:16/9;" />',
+                unsafe_allow_html=True
+            )
             
         with col_txt:
             st.markdown(f"**[{b['judul']}]({b['link']})**")
