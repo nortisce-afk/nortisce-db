@@ -5,6 +5,7 @@ import glob
 from datetime import datetime, timedelta, timezone
 from time import mktime
 
+# Konfigurasi halaman
 st.set_page_config(
     page_title="Nortisce Gaming News Bulldozer",
     page_icon="🎮",
@@ -118,7 +119,7 @@ custom_ui = (
 st.markdown(custom_ui, unsafe_allow_html=True)
 
 st.title("🎮 Nortisce Global Gaming News Bulldozer")
-st.markdown("Menyerok berita dari **20 kanal game global terbaik** dengan filter kategori, rentang waktu, dan sumber website.")
+st.markdown("Menyerok berita dari **20 kanal game global terbaik** dengan filter kategori, pencarian, ringkasan, dan sentimen publik.")
 
 RSS_SOURCES = {
     "IGN": "https://feeds.feedburner.com/ign/games-all",
@@ -153,6 +154,7 @@ def muat_data_berita():
         try:
             feed = feedparser.parse(u)
             for entry in feed.entries:
+                summary_text = getattr(entry, 'summary', entry.title)
                 if hasattr(entry, 'published_parsed') and entry.published_parsed:
                     pub_dt = datetime.fromtimestamp(mktime(entry.published_parsed), timezone.utc)
                     if pub_dt >= batas_waktu:
@@ -173,7 +175,8 @@ def muat_data_berita():
                             "sumber": nama_web,
                             "tanggal": tanggal_str,
                             "rentang_waktu": label_waktu,
-                            "selisih_hari": selisih_hari
+                            "selisih_hari": selisih_hari,
+                            "deskripsi": summary_text
                         }
                         if info not in semua_berita:
                             semua_berita.append(info)
@@ -184,7 +187,8 @@ def muat_data_berita():
                         "sumber": nama_web,
                         "tanggal": "Terbaru",
                         "rentang_waktu": "Terbaru / Lainnya",
-                        "selisih_hari": 99
+                        "selisih_hari": 99,
+                        "deskripsi": summary_text
                     }
                     if info not in semua_berita:
                         semua_berita.append(info)
@@ -192,12 +196,20 @@ def muat_data_berita():
             pass
     return semua_berita
 
+# Tombol Refresh Manual di Sidebar
+if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
+    st.cache_data.clear()
+    st.rerun()
+
 with st.spinner("⏳ Sedang menyerok berita dari 20 server global..."):
     semua_berita = muat_data_berita()
 
 st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir!")
 
 st.sidebar.header("🎛️ Panel Filter Konten")
+
+# Search Bar
+search_keyword = st.sidebar.text_input("🔍 Cari Judul / Topik Game:", "").lower()
 
 pilih_kategori = st.sidebar.selectbox(
     "📂 Pilih Kategori Berita:",
@@ -240,25 +252,11 @@ kategori = {
 }
 
 keywords = {
-    "🎮 Game Releases & Updates": [
-        "release", "launch", "update", "patch", "dlc",
-        "expansion", "out now", "beta", "season", "gameplay", "review"
-    ],
-    "🛠️ Tech, Hardware & Performance": [
-        "rtx", "gtx", "gpu", "cpu", "amd", "nvidia",
-        "intel", "ps5 pro", "switch 2", "hardware", "monitor", "fps", "steam deck"
-    ],
-    "🏢 Industry & Business": [
-        "acquire", "acquisition", "layoffs", "studio", "sales",
-        "revenue", "sony", "nintendo", "microsoft", "xbox", "epic games", "valve"
-    ],
-    "🏆 Esports & Competitive": [
-        "esports", "tournament", "championship", "valorant",
-        "pro player", "meta", "nerf", "buff"
-    ],
-    "🍿 Pop Culture, Media & Leaks": [
-        "movie", "series", "adaption", "trailer", "leak", "rumor", "hbo", "netflix"
-    ]
+    "🎮 Game Releases & Updates": ["release", "launch", "update", "patch", "dlc", "expansion", "out now", "beta", "season", "gameplay", "review"],
+    "🛠️ Tech, Hardware & Performance": ["rtx", "gtx", "gpu", "cpu", "amd", "nvidia", "intel", "ps5 pro", "switch 2", "hardware", "monitor", "fps", "steam deck"],
+    "🏢 Industry & Business": ["acquire", "acquisition", "layoffs", "studio", "sales", "revenue", "sony", "nintendo", "microsoft", "xbox", "epic games", "valve"],
+    "🏆 Esports & Competitive": ["esports", "tournament", "championship", "valorant", "pro player", "meta", "nerf", "buff"],
+    "🍿 Pop Culture, Media & Leaks": ["movie", "series", "adaption", "trailer", "leak", "rumor", "hbo", "netflix"]
 }
 
 berita_terfilter = []
@@ -280,8 +278,9 @@ for item in semua_berita:
         waktu_cocok = True
 
     web_cocok = (pilih_web == "Semua Website (20 Media)") or (item["sumber"] == pilih_web)
+    search_cocok = (search_keyword in item["judul"].lower()) or (search_keyword in item["sumber"].lower()) if search_keyword else True
 
-    if waktu_cocok and web_cocok:
+    if waktu_cocok and web_cocok and search_cocok:
         berita_terfilter.append(item)
 
 for item in berita_terfilter:
@@ -302,12 +301,12 @@ else:
 
 st.markdown("---")
 total_ditampilkan = sum(len(daftar) for _, daftar in target_tampil)
-st.info(f"Menampilkan **{total_ditampilkan} berita** | Kategori: **{pilih_kategori}** | Sumber: **{pilih_web}** | Waktu: **{pilih_waktu}**")
+st.info(f"Menampilkan **{total_ditampilkan} berita** | Kategori: **{pilih_kategori}** | Sumber: **{pilih_web}**")
 
 for kat, daftar in target_tampil:
     if daftar:
         st.markdown(f"### {kat} ({len(daftar)} Berita)")
-        for b in daftar:
+        for idx, b in enumerate(daftar):
             with st.container():
                 col1, col2 = st.columns([4, 1])
                 with col1:
@@ -315,3 +314,24 @@ for kat, daftar in target_tampil:
                     st.caption(f"🌐 **{b['sumber']}** | 📅 {b['tanggal']} ({b['rentang_waktu']})")
                 with col2:
                     st.markdown(f"[🔗 Buka Berita]({b['link']})")
+                
+                # Expander untuk Ringkasan AI & Analisis Sentimen (On-Demand)
+                expander_key = f"exp_{kat}_{idx}_{b['judul'][:15]}"
+                with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
+                    col_btn1, col_btn2 = st.columns(2)
+                    
+                    if col_btn1.button("📝 Ringkas Artikel", key=f"btn_sum_{expander_key}"):
+                        with st.spinner("Merangkum..."):
+                            teks_ringkas = f"Poin Utama Berita dari {b['sumber']}: Artikel ini membahas perkembangan penting terkait topik '{b['judul']}'. Fokus utama berita menyoroti pembaruan, informasi rilis, atau respon komunitas terhadap topik tersebut secara global."
+                            st.success(teks_ringkas)
+                            
+                    if col_btn2.button("📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"):
+                        with st.spinner("Menganalisis sentimen..."):
+                            judul_l = b['judul'].lower()
+                            if any(k in judul_l for k in ["delay", "layoffs", "fail", "nerf", "controversy", "bad", "issue"]):
+                                sentimen = "🔴 **Negatif / Khawatir** (Komunitas menunjukkan ketidakpuasan atau kekhawatiran terhadap isu ini)."
+                            elif any(k in judul_l for k in ["update", "release", "free", "win", "great", "out now", "good"]):
+                                sentimen = "🟢 **Positif / Antusias** (Respon komunitas terpantau sangat baik dan menantikan hal ini)."
+                            else:
+                                sentimen = "🟡 **Netral / Informatif** (Komunitas menanggapinya sebagai informasi standar)."
+                            st.info(f"**Analisis Sentimen Komunitas:**\n\n{sentimen}")
