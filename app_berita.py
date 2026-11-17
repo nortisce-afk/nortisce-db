@@ -35,39 +35,46 @@ sidebar_bg_base64, img_mime = get_chunli_bg()
 if sidebar_bg_base64:
     sidebar_css = (
         '[data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {'
-        f'    background-image: linear-gradient(rgba(10, 15, 30, 0.55), rgba(10, 15, 30, 0.75)), url("data:{img_mime};base64,{sidebar_bg_base64}") !important;'
+        f'    background-image: linear-gradient(rgba(10, 15, 30, 0.70), rgba(10, 15, 30, 0.85)), url("data:{img_mime};base64,{sidebar_bg_base64}") !important;'
         '    background-size: cover !important; background-position: center 15% !important; background-repeat: no-repeat !important;'
         '}'
     )
 else:
-    sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.9) !important; }'
+    sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.95) !important; }'
 
+# --- CLEAN GAMING UI CSS (DISEMPURNAKAN AGAR LEBIH RAPI & ELEGAN) ---
 custom_ui = (
     '<style>'
-    '.stApp { background-image: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
+    # Background utama dengan gradien yang lebih clean & gelap elegan
+    '.stApp { background-image: linear-gradient(rgba(8, 12, 20, 0.85), rgba(8, 12, 20, 0.92)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
     + sidebar_css +
     'header[data-testid="stHeader"] { background-color: transparent !important; }'
-    '.metal-slug-banner { position: fixed; top: 0; left: 0; width: 100%; height: 60px; overflow: hidden; pointer-events: none; z-index: 999990; }'
+    
+    # Animasi Metal Slug Banner yang minimalis di atas
+    '.metal-slug-banner { position: fixed; top: 0; left: 0; width: 100%; height: 50px; overflow: hidden; pointer-events: none; z-index: 999990; }'
     '@keyframes patrolShoot { 0% { left: -60px; transform: scaleX(1); } 47% { left: calc(100% - 210px); transform: scaleX(1); } 50% { left: calc(100% - 210px); transform: scaleX(-1); } 97% { left: -60px; transform: scaleX(-1); } 100% { left: -60px; transform: scaleX(1); } }'
     '@keyframes runBounce { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-3px); } }'
     '@keyframes legLeft { 0%, 100% { transform: translateX(0px); } 50% { transform: translateX(3px); } }'
     '@keyframes legRight { 0%, 100% { transform: translateX(0px); } 50% { transform: translateX(-3px); } }'
     '@keyframes muzzleFlash { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }'
-    '.metal-slug-runner { position: absolute; top: 6px; width: 60px; height: 50px; animation: patrolShoot 12s linear infinite; }'
+    '.metal-slug-runner { position: absolute; top: 4px; width: 60px; height: 45px; animation: patrolShoot 14s linear infinite; }'
     '.sprite-body { width: 100%; height: 100%; animation: runBounce 0.2s infinite; }'
     '.leg-l { animation: legLeft 0.2s infinite; } .leg-r { animation: legRight 0.2s infinite; } .flash { animation: muzzleFlash 0.12s infinite; }'
     '@keyframes bulletStream1 { 0% { opacity: 1; transform: translateX(0px); } 100% { opacity: 0; transform: translateX(260px); } }'
     '@keyframes bulletStream2 { 0% { opacity: 0; transform: translateX(0px); } 40% { opacity: 1; transform: translateX(80px); } 100% { opacity: 0; transform: translateX(260px); } }'
-    '.bullet-1, .bullet-2 { position: absolute; top: 23px; left: 44px; width: 16px; height: 3px; background: #fff200; box-shadow: 0 0 6px #ff6600, 0 0 10px #ff0000; border-radius: 2px; }'
+    '.bullet-1, .bullet-2 { position: absolute; top: 20px; left: 44px; width: 14px; height: 2px; background: #38bdf8; box-shadow: 0 0 6px #0284c7, 0 0 10px #38bdf8; border-radius: 2px; }'
     '.bullet-1 { animation: bulletStream1 0.3s linear infinite; } .bullet-2 { animation: bulletStream2 0.3s linear infinite; }'
-    'div.stContainer { background-color: rgba(15, 20, 35, 0.75); padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 120, 0, 0.3); margin-bottom: 10px; }'
+    
+    # Kotak Berita (Glassmorphism & Clean Border)
+    'div.stContainer { background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); padding: 18px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.2); margin-bottom: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); }'
+    'div.stContainer:hover { border-color: rgba(56, 189, 248, 0.5); transition: all 0.3s ease; }'
     '</style>'
     '<div class="metal-slug-banner"><div class="metal-slug-runner"><div class="sprite-body">'
-    '<svg viewBox="0 0 16 16" width="46" height="46" shape-rendering="crispEdges">'
+    '<svg viewBox="0 0 16 16" width="40" height="40" shape-rendering="crispEdges">'
     '<rect x="4" y="1" width="6" height="2" fill="#8B4513"/><rect x="4" y="3" width="7" height="1" fill="#FF0000"/><rect x="2" y="3" width="2" height="2" fill="#FF0000"/>'
     '<rect x="5" y="4" width="5" height="3" fill="#FFCC99"/><rect x="8" y="4" width="1" height="1" fill="#000000"/><rect x="4" y="7" width="6" height="4" fill="#F0F0F0"/>'
     '<rect x="5" y="7" width="4" height="4" fill="#3A5F0B"/><rect x="6" y="8" width="8" height="2" fill="#222222"/><rect x="7" y="9" width="2" height="2" fill="#555555"/>'
-    '<polygon class="flash" points="14,7 16,9 14,11" fill="#FFAA00"/>'
+    '<polygon class="flash" points="14,7 16,9 14,11" fill="#38bdf8"/>'
     '<g class="leg-l"><rect x="4" y="11" width="2" height="3" fill="#2F4F4F"/><rect x="3" y="14" width="3" height="2" fill="#4A2E1B"/></g>'
     '<g class="leg-r"><rect x="8" y="11" width="2" height="3" fill="#2F4F4F"/><rect x="8" y="14" width="3" height="2" fill="#4A2E1B"/></g>'
     '</svg></div><div class="bullet-1"></div><div class="bullet-2"></div></div></div>'
@@ -205,7 +212,7 @@ def langkah_bot_ttt(papan):
         return 4
     return random.choice(kosong)
 
-if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
+if st.sidebar.button("🔄 Refresh Cache Berita", use_container_width=True):
     st.cache_data.clear()
     st.rerun()
 
@@ -214,24 +221,24 @@ with st.spinner("⏳ Menyerok berita dari 28 server (Global & Lokal)..."):
 
 st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir! (28 Kanal Media)")
 
-st.sidebar.header("🎛️ Panel Filter Konten")
-search_keyword = st.sidebar.text_input("🔍 Cari Judul / Topik Game:", "").lower()
+st.sidebar.header("🎛️ Panel Filter")
+search_keyword = st.sidebar.text_input("🔍 Cari Judul / Game:", "").lower()
 
 pilih_kategori = st.sidebar.selectbox(
-    "📂 Pilih Kategori Berita:",
+    "📂 Kategori Berita:",
     ["Semua Kategori", "🎮 Game Releases & Updates", "🛠️ Tech, Hardware & Performance", "🏢 Industry & Business", "🏆 Esports & Competitive", "🍿 Pop Culture, Media & Leaks", "📌 Lainnya"]
 )
 
-pilih_web = st.sidebar.selectbox("🌐 Pilih Sumber Website:", ["Semua Website (28 Media)"] + list(RSS_SOURCES.keys()))
-pilih_waktu = st.sidebar.selectbox("⏰ Pilih Rentang Waktu:", ["Semua Rentang Waktu (7 Hari Terakhir)", "Today (Hari Ini)", "1 Day Ago (Kemarin)", "2 Days Ago", "3 Days Ago", "4-7 Days Ago"])
+pilih_web = st.sidebar.selectbox("🌐 Sumber Website:", ["Semua Website (28 Media)"] + list(RSS_SOURCES.keys()))
+pilih_waktu = st.sidebar.selectbox("⏰ Rentang Waktu:", ["Semua Rentang Waktu (7 Hari Terakhir)", "Today (Hari Ini)", "1 Day Ago (Kemarin)", "2 Days Ago", "3 Days Ago", "4-7 Days Ago"])
 
-# --- SIDEBAR: QUICK LINK UPCOMING GAMES RELEASE (DI BAWAH RENTANG WAKTU) ---
+# --- SIDEBAR: UPCOMING GAMES RELEASE (DI BAWAH RENTANG WAKTU) ---
 st.sidebar.markdown("---")
 st.sidebar.markdown("[🎮 Upcoming Games Release](https://www.ign.com/upcoming/games)", unsafe_allow_html=True)
 
 # --- MINI-GAME TIC-TAC-TOE ---
 st.sidebar.markdown("---")
-st.sidebar.subheader("🕹️ Mini-Game: Tic-Tac-Toe")
+st.sidebar.subheader("🕹️ Tic-Tac-Toe")
 st.sidebar.caption("Kamu (**❌**) vs Bot (**⭕**)")
 
 if "ttt_board" not in st.session_state:
@@ -267,13 +274,13 @@ for row in range(3):
         )
 
 if st.session_state.ttt_winner == "X":
-    st.sidebar.success("🎉 Mantap! Kamu Menang!")
+    st.sidebar.success("🎉 Kamu Menang!")
 elif st.session_state.ttt_winner == "O":
-    st.sidebar.error("🤖 Bot Menang! Coba lagi!")
+    st.sidebar.error("🤖 Bot Menang!")
 elif st.session_state.ttt_winner == "Seri":
-    st.sidebar.warning("🤝 Hasil Seri!")
+    st.sidebar.warning("🤝 Seri!")
 
-if st.sidebar.button("🔁 Main Ulang Tic-Tac-Toe", use_container_width=True):
+if st.sidebar.button("🔁 Reset Game", use_container_width=True):
     st.session_state.ttt_board = [""] * 9
     st.session_state.ttt_winner = None
     st.rerun()
@@ -332,7 +339,7 @@ for kat, daftar in target_tampil:
                     st.markdown(f"**{b['judul']}**")
                     st.caption(f"🌐 **{b['sumber']}** | 📅 {b['tanggal']} ({b['rentang_waktu']})")
                 with col2:
-                    st.markdown(f"[🔗 Buka Berita](https://www.ign.com/upcoming/games)")
+                    st.markdown(f"[🔗 Buka Berita]({b['link']})")
                 
                 expander_key = f"exp_{kat}_{idx}_{b['judul'][:15]}"
                 with st.expander("✨ Ringkasan AI & Analisis Sentimen Publik"):
