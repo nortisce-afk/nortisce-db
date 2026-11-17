@@ -42,12 +42,53 @@ if sidebar_bg_base64:
 else:
     sidebar_css = '[data-testid="stSidebar"] { background-color: rgba(15, 20, 35, 0.95) !important; }'
 
-# --- CLEAN GAMING UI CSS (TRANSPARAN PENUH & ELEGAN) ---
+# Cek status buka/tutup sidebar via session_state
+if "sidebar_open" not in st.session_state:
+    st.session_state.sidebar_open = False
+
+# Tangkap parameter URL query untuk buka/tutup sidebar
+query_params = st.query_params
+if "toggle_sidebar" in query_params:
+    val = query_params["toggle_sidebar"]
+    st.session_state.sidebar_open = (val == "1")
+    st.rerun()
+
+sidebar_left_pos = "0px" if st.session_state.sidebar_open else "-300px"
+
+# --- CLEAN GAMING UI CSS + PC CLICK-OUTSIDE OVERLAY ---
 custom_ui = (
     '<style>'
     '.stApp { background-image: linear-gradient(rgba(8, 12, 20, 0.85), rgba(8, 12, 20, 0.92)), url("https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1920&auto=format&fit=crop"); background-size: cover; background-position: center; background-attachment: fixed; }'
     + sidebar_css +
     'header[data-testid="stHeader"] { background-color: transparent !important; }'
+    
+    # --- POSISI & ANIMASI SIDEBAR ---
+    '[data-testid="stSidebar"] {'
+    '    position: fixed !important;'
+    '    top: 0 !important;'
+    f'    left: {sidebar_left_pos} !important;'
+    '    width: 300px !important;'
+    '    height: 100vh !important;'
+    '    z-index: 999999 !important;'
+    '    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;'
+    '    box-shadow: 5px 0 25px rgba(0, 0, 0, 0.8) !important;'
+    '    border-right: 1px solid rgba(56, 189, 248, 0.4) !important;'
+    '}'
+    
+    # --- LAPISAN OVERLAY KHUSUS PC (DI LUAR 300px SIDEBAR) ---
+    + ('\n@media (min-width: 768px) {\n'
+       '    .pc-sidebar-overlay {\n'
+       '        position: fixed;\n'
+       '        top: 0;\n'
+       '        left: 300px;\n'
+       '        width: calc(100vw - 300px);\n'
+       '        height: 100vh;\n'
+       '        z-index: 999995;\n'
+       '        background: transparent;\n'
+       '    }\n'
+       '}\n' if st.session_state.sidebar_open else '') +
+    
+    # Metal Slug Runner Animation Banner
     '.metal-slug-banner { position: fixed; top: 0; left: 0; width: 100%; height: 50px; overflow: hidden; pointer-events: none; z-index: 999990; }'
     '@keyframes patrolShoot { 0% { left: -60px; transform: scaleX(1); } 47% { left: calc(100% - 210px); transform: scaleX(1); } 50% { left: calc(100% - 210px); transform: scaleX(-1); } 97% { left: -60px; transform: scaleX(-1); } 100% { left: -60px; transform: scaleX(1); } }'
     '@keyframes runBounce { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-3px); } }'
@@ -112,6 +153,8 @@ custom_ui = (
     '    background-color: rgba(56, 189, 248, 0.25) !important;'
     '}'
     '</style>'
+    # Render overlay klik khusus PC di luar sidebar jika sidebar sedang terbuka
+    + ('<a href="?toggle_sidebar=0" class="pc-sidebar-overlay" title="Tutup Menu"></a>' if st.session_state.sidebar_open else '') +
     '<div class="metal-slug-banner"><div class="metal-slug-runner"><div class="sprite-body">'
     '<svg viewBox="0 0 16 16" width="40" height="40" shape-rendering="crispEdges">'
     '<rect x="4" y="1" width="6" height="2" fill="#8B4513"/><rect x="4" y="3" width="7" height="1" fill="#FF0000"/><rect x="2" y="3" width="2" height="2" fill="#FF0000"/>'
@@ -166,7 +209,6 @@ def bersihkan_html(teks):
     return re.sub(r'\s+', ' ', teks_bersih).strip()[:600]
 
 def ambil_thumbnail(entry):
-    # Daftar gambar cadangan (fallback) bertema gaming beresolusi tinggi yang dijamin aktif & clean
     fallback_game_images = [
         "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=600&auto=format&fit=crop",
@@ -192,7 +234,6 @@ def ambil_thumbnail(entry):
         if match:
             candi_url = match.group(1)
 
-    # Validasi URL: Jika domain Pure Xbox / IGN / Cloudflare yang sering blokir hotlinking, langsung ganti dengan fallback
     if not candi_url or any(bad in candi_url.lower() for bad in ['purexbox.com', 'nintendolife.com', 'pushsquare.com', 'kickstarter', 'ads']):
         return random.choice(fallback_game_images)
         
@@ -483,7 +524,6 @@ for idx, b in enumerate(berita_paginasi):
         col_img, col_txt = st.columns([1, 4])
         
         with col_img:
-            # Render menggunakan st.image bawaan Streamlit yang aman dari blokir iframe/sandbox
             st.image(b['thumbnail'], use_column_width=True)
             
         with col_txt:
