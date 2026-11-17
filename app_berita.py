@@ -131,10 +131,11 @@ def muat_data_berita():
             pass
     return semua_berita
 
-# Fungsi AI dengan Auto-Fallback multi-model & Cache
+# Fungsi AI dengan Cache agar hasil yang sudah diringkas tidak memakan kuota lagi
 @st.cache_data(show_spinner=False)
 def analisis_gemini_cepat(api_key, mode, judul, sumber, deskripsi):
     genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-3.8-flash')
     if mode == "ringkas":
         prompt = (
             f"Sebagai analis industri game, bedah esensi berita dari {sumber} berikut secara tajam, unik, dan mendalam dalam 3 kalimat bahasa Indonesia (tanpa basa-basi pembuka):\n"
@@ -145,20 +146,8 @@ def analisis_gemini_cepat(api_key, mode, judul, sumber, deskripsi):
             f"As a gaming community observer, determine public sentiment (Positive / Negative / Neutral) and its sharp reasoning in 2-3 sentences of Indonesian for this news:\n"
             f"Title: {judul}\nContext: {deskripsi}"
         )
-
-    daftar_model = ['gemini-3.8-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash']
-    error_terakhir = None
-
-    for nama_model in daftar_model:
-        try:
-            model = genai.GenerativeModel(nama_model)
-            response = model.generate_content(prompt)
-            return response.text
-        except Exception as e:
-            error_terakhir = e
-            continue
-
-    raise error_terakhir
+    response = model.generate_content(prompt)
+    return response.text
 
 if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
     st.cache_data.clear()
@@ -247,8 +236,8 @@ for kat, daftar in target_tampil:
                                 try:
                                     hasil = analisis_gemini_cepat(api_key_input, "ringkas", b['judul'], b['sumber'], b['deskripsi'])
                                     st.success(hasil)
-                                except Exception as e:
-                                    st.error(f"Gagal memanggil Gemini: {e}")
+                                except Exception:
+                                    st.warning("⏳ Kuota harian AI sedang penuh (limit 20x/hari pada Free Tier). Silakan coba lagi besok atau ganti API Key baru di Secrets.")
                             
                     if col_btn2.button("📊 Cek Sentimen Publik", key=f"btn_sent_{expander_key}"):
                         if not api_key_input:
@@ -258,5 +247,5 @@ for kat, daftar in target_tampil:
                                 try:
                                     hasil = analisis_gemini_cepat(api_key_input, "sentimen", b['judul'], b['sumber'], b['deskripsi'])
                                     st.info(hasil)
-                                except Exception as e:
-                                    st.error(f"Gagal memanggil Gemini: {e}")
+                                except Exception:
+                                    st.warning("⏳ Kuota harian AI sedang penuh (limit 20x/hari pada Free Tier). Silakan coba lagi besok atau ganti API Key baru di Secrets.")
