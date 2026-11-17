@@ -74,8 +74,8 @@ custom_ui = (
 )
 st.markdown(custom_ui, unsafe_allow_html=True)
 
-st.title("🎮 Nortisce Global & Local Gaming News Bulldozer")
-st.markdown("Menyerok berita dari **20 kanal global + 10 kanal lokal terbaik** dengan filter, pencarian, dan analisis AI Gemini cepat.")
+st.title("🎮 Nortisce Global Gaming News Bulldozer")
+st.markdown("Menyerok berita dari **20 kanal global pilihan** dengan filter, pencarian, dan analisis AI Gemini cepat.")
 
 RSS_SOURCES = {
     # 20 Kanal Global
@@ -98,19 +98,7 @@ RSS_SOURCES = {
     "ResetEra": "https://www.resetera.com/index.rss",
     "DualShockers": "https://www.dualshockers.com/feed/",
     "Wccftech": "https://wccftech.com/feed",
-    "Rock Paper Shotgun": "https://www.rockpapershotgun.com/feed",
-    
-    # 10 Kanal Lokal Indonesia
-    "Duniaku": "https://duniaku.idnes.co.id/feed",
-    "Kincir": "https://kincir.com/game/feed",
-    "KotakGame": "https://kotakgame.com/rss/news.xml",
-    "IDN Times": "https://www.idntimes.com/tech/games/rss",
-    "Indogamers": "https://www.indogamers.com/feed",
-    "GGWP.ID": "https://ggwp.id/feed",
-    "Hybrid": "https://hybrid.co.id/feed",
-    "Merdeka": "https://www.merdeka.com/teknologi/feed",
-    "Jagat Play": "https://jagatplay.com/feed",
-    "RevivalTV": "https://revivaltv.id/feed"
+    "Rock Paper Shotgun": "https://www.rockpapershotgun.com/feed"
 }
 
 def bersihkan_html(teks):
@@ -211,10 +199,10 @@ if st.sidebar.button("🔄 Refresh / Bersihkan Cache Berita"):
     st.cache_data.clear()
     st.rerun()
 
-with st.spinner("⏳ Menyerok berita dari 30 server (Global & Lokal)..."):
+with st.spinner("⏳ Menyerok berita dari 20 server global..."):
     semua_berita = muat_data_berita()
 
-st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir! (30 Kanal Media)")
+st.success(f"Berhasil mengumpulkan {len(semua_berita)} berita segar dalam 7 hari terakhir! (20 Kanal Media Global)")
 
 st.sidebar.header("🎛️ Panel Filter Konten")
 search_keyword = st.sidebar.text_input("🔍 Cari Judul / Topik Game:", "").lower()
@@ -224,7 +212,7 @@ pilih_kategori = st.sidebar.selectbox(
     ["Semua Kategori", "🎮 Game Releases & Updates", "🛠️ Tech, Hardware & Performance", "🏢 Industry & Business", "🏆 Esports & Competitive", "🍿 Pop Culture, Media & Leaks", "📌 Lainnya"]
 )
 
-pilih_web = st.sidebar.selectbox("🌐 Pilih Sumber Website:", ["Semua Website (30 Media)"] + list(RSS_SOURCES.keys()))
+pilih_web = st.sidebar.selectbox("🌐 Pilih Sumber Website:", ["Semua Website (20 Media)"] + list(RSS_SOURCES.keys()))
 pilih_waktu = st.sidebar.selectbox("⏰ Pilih Rentang Waktu:", ["Semua Rentang Waktu (7 Hari Terakhir)", "Today (Hari Ini)", "1 Day Ago (Kemarin)", "2 Days Ago", "3 Days Ago", "4-7 Days Ago"])
 
 # --- MINI-GAME TIC-TAC-TOE ---
@@ -297,7 +285,7 @@ for item in semua_berita:
         (pilih_waktu == "3 Days Ago" and sw == 3) or
         (pilih_waktu == "4-7 Days Ago" and (4 <= sw <= 7))
     )
-    web_cocok = (pilih_web == "Semua Website (30 Media)") or (item["sumber"] == pilih_web)
+    web_cocok = (pilih_web == "Semua Website (20 Media)") or (item["sumber"] == pilih_web)
     search_cocok = (search_keyword in item["judul"].lower()) or (search_keyword in item["sumber"].lower()) if search_keyword else True
 
     if waktu_cocok and web_cocok and search_cocok:
