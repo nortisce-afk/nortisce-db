@@ -392,7 +392,7 @@ st.markdown("---")
 total_ditampilkan = sum(len(daftar) for _, daftar in target_tampil)
 st.info(f"Menampilkan total **{total_ditampilkan} berita** tersaring | Kategori: **{pilih_kategori}** | Sumber: **{pilih_web}**")
 
-# --- SISTEM PAGINASI (ATAS & BAWAH) ---
+# --- SISTEM PAGINASI TERSINKRONISASI (ATAS & BAWAH) ---
 semua_berita_flat = []
 for kat, daftar in target_tampil:
     for b in daftar:
@@ -402,17 +402,29 @@ for kat, daftar in target_tampil:
 items_per_page = 10
 total_pages = max(1, (len(semua_berita_flat) + items_per_page - 1) // items_per_page)
 
+if "halaman_aktif" not in st.session_state:
+    st.session_state.halaman_aktif = 1
+if st.session_state.halaman_aktif > total_pages:
+    st.session_state.halaman_aktif = 1
+
+def ubah_halaman_atas():
+    st.session_state.halaman_aktif = st.session_state.top_pagination
+
+def ubah_halaman_bawah():
+    st.session_state.halaman_aktif = st.session_state.bottom_pagination
+
 # Paginasi Bagian Atas
 if total_pages > 1:
-    current_page = st.selectbox(
+    st.selectbox(
         f"📄 Pilih Halaman (Total {total_pages} Page Tersedia):",
         range(1, total_pages + 1),
+        index=st.session_state.halaman_aktif - 1,
         format_func=lambda x: f"Page {x} dari {total_pages} (Menampilkan 10 Berita)",
-        key="top_pagination"
+        key="top_pagination",
+        on_change=ubah_halaman_atas
     )
-else:
-    current_page = 1
 
+current_page = st.session_state.halaman_aktif
 start_idx = (current_page - 1) * items_per_page
 end_idx = start_idx + items_per_page
 berita_paginasi = semua_berita_flat[start_idx:end_idx]
@@ -456,16 +468,14 @@ for idx, b in enumerate(berita_paginasi):
                         except Exception as e:
                             st.error(f"Detail kendala: {e}")
 
-# --- Paginasi Bagian Bawah (Agar tidak perlu scroll ke atas) ---
+# --- Paginasi Bagian Bawah (Tersinkronisasi otomatis dengan atas) ---
 if total_pages > 1:
     st.markdown("---")
-    current_page_bottom = st.selectbox(
+    st.selectbox(
         f"📄 Navigasi Halaman Bawah (Total {total_pages} Page):",
         range(1, total_pages + 1),
-        index=current_page - 1,
+        index=st.session_state.halaman_aktif - 1,
         format_func=lambda x: f"Page {x} dari {total_pages}",
-        key="bottom_pagination"
+        key="bottom_pagination",
+        on_change=ubah_halaman_bawah
     )
-    if current_page_bottom != current_page:
-        st.session_state.top_pagination = current_page_bottom
-        st.rerun()
