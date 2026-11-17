@@ -131,7 +131,7 @@ def muat_data_berita():
             pass
     return semua_berita
 
-# Fungsi AI dengan Auto-Fallback (otomatis pindah ke lite jika flash limit) & Cache
+# Fungsi AI dengan Auto-Fallback multi-model & Cache
 @st.cache_data(show_spinner=False)
 def analisis_gemini_cepat(api_key, mode, judul, sumber, deskripsi):
     genai.configure(api_key=api_key)
@@ -146,7 +146,7 @@ def analisis_gemini_cepat(api_key, mode, judul, sumber, deskripsi):
             f"Title: {judul}\nContext: {deskripsi}"
         )
 
-    daftar_model = ['gemini-3.8-flash', 'gemini-3.8-flash-lite']
+    daftar_model = ['gemini-3.8-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash']
     error_terakhir = None
 
     for nama_model in daftar_model:
