@@ -115,18 +115,22 @@ def bersihkan_html(teks):
     return re.sub(r'\s+', ' ', teks_bersih).strip()[:600]
 
 def ambil_gambar_berita(entry):
+    # 1. Cek media:content di RSS
     if hasattr(entry, 'media_content') and entry.media_content:
         for m in entry.media_content:
-            if 'url' in m:
+            if 'url' in m and m['url'].startswith('http'):
                 return m['url']
+    # 2. Cek enclosures
     if hasattr(entry, 'enclosures') and entry.enclosures:
         for enc in entry.enclosures:
-            if enc.get('type', '').startswith('image/'):
+            if enc.get('type', '').startswith('image/') and enc.get('href'):
                 return enc.get('href')
+    # 3. Cek links
     if hasattr(entry, 'links') and entry.links:
         for l in entry.links:
-            if l.get('type', '').startswith('image/'):
+            if l.get('type', '').startswith('image/') and l.get('href'):
                 return l.get('href')
+    # 4. Cari tag <img> di dalam summary / deskripsi RSS
     raw_html = ""
     if hasattr(entry, 'summary'):
         raw_html += entry.summary
@@ -136,8 +140,16 @@ def ambil_gambar_berita(entry):
     if raw_html:
         match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', raw_html)
         if match:
-            return match.group(1)
-    return "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=400&auto=format&fit=crop"
+            src = match.group(1)
+            if src.startswith('http'):
+                return src
+    
+    # 5. Fallback menggunakan API thumbnail publik berbasis URL link berita agar setiap link memiliki gambar unik dari situsnya
+    link_berita = getattr(entry, 'link', '')
+    if link_berita:
+        return f"https://image.thum.io/get/width/600/crop/800/{link_berita}"
+    
+    return "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=400&auto=format&fit=crop"
 
 def parse_single_feed(nama_web, url):
     berita_lokal = []
